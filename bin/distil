@@ -25,6 +25,10 @@ ARGV.each { |v|
     arg_settings[key.to_sym]= value
 }
 
+if (files.empty?)
+  files= ['distil.yml']
+end
+
 Task.set_global_options({
         :name=> File.basename(files[0], File.extname(files[0])),
         :formats=> ["concat", "gz", "min", "debug"],
