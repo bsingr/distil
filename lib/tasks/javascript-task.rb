@@ -36,8 +36,8 @@ class JavascriptTask < OutputTask
     tmp << File.read(@options.jsl_conf)
     tmp << "\n"
     
-    @options.external.each { |i|
-      tmp << "+include #{i}\n"
+    @options.external_projects.each { |project|
+      tmp << "+include #{project["include"]}\n"
     }
     
     @included_files.each { |f|

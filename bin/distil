@@ -10,54 +10,85 @@ arg_settings= {}
 files= Array.new
 
 ARGV.each { |v|
-    if (!v[/^-/])
-        files << v
-        next
-    end
-    
-    v= v.gsub(/^-+/, '')
-    v.gsub!("-", "_")
-    
-    key,value= v.split("=")
-    if (!value)
-        value= true
-    end
-    arg_settings[key.to_sym]= value
+  if (!v[/^-/])
+    files << v
+    next
+  end
+  
+  v= v.gsub(/^-+/, '')
+  v.gsub!("-", "_")
+  
+  key,value= v.split("=")
+  if (!value)
+    value= true
+  end
+  arg_settings[key.to_sym]= value
 }
 
 if (files.empty?)
   files= ['distil.yml']
+else
+  # Change working directory to the folder containing the build YML file.
+  Dir.chdir(File.dirname(files[0]))
 end
 
 Task.set_global_options({
-        :name=> File.basename(files[0], File.extname(files[0])),
-        :formats=> ["concat", "gz", "min", "debug"],
-        :output_folder=> Dir.getwd
-    })
+    :formats=> ["concat", "gz", "min", "debug"],
+    :output_folder=> Dir.getwd
+  })
 
+# Override default settings with options from the command line
 Task.set_global_options(arg_settings)
 
 build_info= YAML.load_file(files[0])
 Task.set_global_options(build_info)
 
 options= Task.options
-if (options.targets)
-    if (options.targets.is_a?(String))
-        options.targets= options.targets.split(/\s*,\s*/)
-    end
-end
+
+# Handle externals
+externals= Task.options.external_projects
+
+externals.each_index { |index|
+  
+  project= externals[index]
+  if (project.is_a?(String))
+    project= {
+      "folder"=>project,
+      "build"=>"distil",
+      "include"=>File.join(project, "build")
+    }
+    externals[index]= project
+  end
+
+  if (project.key?("folder") && !File.directory?(project["folder"]))
+    puts "#{file[0]}: external project folder missing: #{project["folder"]}"
+    exit
+  end
+  
+  if (!project.key?("include"))
+    project["include"]= File.join(project["folder"], "build")
+  end
+  
+  if (!File.directory?(project["include"]))
+    build= project["build"] || "distil"
+    wd= Dir.pwd
+    Dir.chdir(project["folder"]||project["include"])
+    system(build)
+    Dir.chdir(wd)
+  end
+}
 
 build_info.each { |section, value|
-    next if (options.targets && !options.targets.include?(section))
-    next if ((!options.targets || !options.targets.include?(section)) &&
-             value.is_a?(Hash) && value.has_key?("enabled") && !value["enabled"])
+  next if (options.targets && !options.targets.include?(section))
+  next if ((!options.targets || !options.targets.include?(section)) &&
+       value.is_a?(Hash) && value.has_key?("enabled") && !value["enabled"])
 
-    puts
-    puts "#{section}:"
-    puts
-        
-    target= Target.new(section, value)
-    Target.current= target
-    target.process_all_files
-    target.finish
+  puts
+  puts "#{options.name}-#{section}:"
+  puts
+    
+  target= Target.new(section, value)
+  Target.current= target
+  target.process_all_files
+  target.finish
 }

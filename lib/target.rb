@@ -69,8 +69,8 @@ class Target
   end
   
   def find_file(file)
-    @options.external.each { |i|
-      path= File.expand_path(File.join(i, file))
+    @options.external_projects.each { |project|
+      path= File.expand_path(File.join(project["include"], file))
       if (File.exists?(path))
         source_file= SourceFile.from_path(path)
         source_file.file_path= file

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "distil"
-  s.version = "0.5.0"
+  s.version = "0.5.1"
   s.date= "2009-10-09"
   s.authors= ["Jeff Watkins"]
   s.summary= "A build tool for Javascript and CSS that takes advantage of best-of-breed helper applications Javascript Lint and JSDoc Toolkit"

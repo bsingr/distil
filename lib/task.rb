@@ -34,7 +34,7 @@ class Task
   declare_option :targets
   declare_option :mode
   declare_option :relative_to_folder
-  declare_option :external, Array.new
+  declare_option :external_projects, Array.new
   
   def initialize(target_name, options)
     @target_name= target_name
@@ -73,6 +73,7 @@ class Task
         hash.delete(hash_key)
       end
     }
+    
   end
   
   def self.options(settings=nil)
