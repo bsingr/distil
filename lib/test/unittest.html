@@ -1,0 +1,126 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Unit Tests</title>
+        <script src="/lib/Test.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/lib/HtmlTestReporter.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/lib/TestRunner.js" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var __failures= [];
+            function onfailure(m)
+            {
+                __failures.push(m);
+            }
+            function oncomplete()
+            {
+                var testForm= document.getElementById('testForm');
+                var elements= testForm.elements;
+                var statistics= TestReporter.statistics();
+                statistics.failures= __failures.join('~!~');
+                var p;
+                for (p in statistics)
+                    elements[p].value= statistics[p];
+                Test.reset();
+                testForm.submit();
+            }
+            function iframeLoaded()
+            {
+                var testFrame= document.getElementById('testFrame');
+                if ('about:blank'===testFrame.src)
+                    return;
+                
+                var h1= document.getElementsByTagName('h1')[0];
+                h1.innerHTML="";
+
+                if (!Test.numberOfRegisteredTests)
+                {
+                    h1.appendChild(document.createTextNode("Unit Tests Complete"));
+                    return;
+                }
+                
+                h1.appendChild(document.createTextNode(testFrame.contentDocument.title));
+                TestReporter.onfailure= onfailure;
+                TestRunner.oncomplete= oncomplete;
+                TestRunner.runAll(TestReporter);
+            }
+
+            function loaded()
+            {
+                var testFrame= document.getElementById('testFrame');
+                var file="?first_file";
+                Test._tests= {};
+                function go()
+                {
+                    testFrame.onload= iframeLoaded;
+                    testFrame.src= file;
+                }
+                window.setTimeout(go, 250);
+            }
+        </script>
+        <style>
+            body
+            {
+                font-family: helvetica, arial, "sans serif";
+            }
+            h1
+            {
+                font-size: 20px;
+                padding: 0 5px;
+            }
+            p.test-results
+            {
+                padding: 0 5px;
+            }
+            
+            ul.test-report-items
+            {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            ul.test-report-items li
+            {
+                padding: 2px 5px;
+            }
+            ul.test-report-items li.test-report-item-failure
+            {
+                background-color: #a22;
+                color: white;
+            }
+            ul.test-report-items li.test-report-item-skip
+            {
+                background-color: #cc0;
+                color: black;
+            }
+
+            ul.test-report-items li a
+            {
+                text-decoration: none;
+                color: #03c;
+            }
+
+            ul.test-report-items li.test-report-item-failure a
+            {
+                color: #f66;
+            }
+            
+        </style>
+    </head>
+    <body onload="loaded()">
+        <h1></h1>
+        <div id="report">
+        </div>
+        <script>
+            TestReporter.setup('report');
+        </script>
+        <iframe id="testFrame" name="testFrame" style="border:none;width:1px;height:1px;" src="about:blank"></iframe>
+        <form id="testForm" method="POST" target="testFrame">
+            <input type="hidden" name="testIndex" value="@testIndex@">
+            <input type="hidden" name="failures" value="">
+            <input type="hidden" name="numberOfTests" value="">
+            <input type="hidden" name="numberOfPasses" value="">
+            <input type="hidden" name="numberOfFailures" value="">
+            <input type="hidden" name="numberOfSkipped" value="">
+        </form>
+    </body>
+</html>
