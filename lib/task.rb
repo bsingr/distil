@@ -33,15 +33,15 @@ class Task
   declare_option :tasks, Array
   declare_option :targets
   declare_option :mode
-  declare_option :relative_to_folder
+  declare_option :remove_prefix
   declare_option :external_projects, Array.new
   
   def initialize(target_name, options)
     @target_name= target_name
     @included_files= []
     @options= options
-    if (@options.relative_to_folder)
-      SourceFile.root_folder= @options.relative_to_folder
+    if (@options.remove_prefix)
+      SourceFile.root_folder= @options.remove_prefix
     end
   end
 

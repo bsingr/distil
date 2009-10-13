@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 $script_dir= File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
-$vendor_dir= File.expand_path(File.join($script_dir, "..", "vendor"))
+$vendor_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
 
 require 'yaml'
 require "#{$script_dir}/target"
