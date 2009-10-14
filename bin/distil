@@ -2,16 +2,21 @@
 
 $script_dir= File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 $vendor_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
+$app_name= File.basename($0)
 
 require 'yaml'
 require "#{$script_dir}/target"
 
 arg_settings= {}
-files= Array.new
+distil_file= nil
 
 ARGV.each { |v|
   if (!v[/^-/])
-    files << v
+    if (distil_file)
+      puts "#{$app_name}: distil file already defined: #{distil_file}"
+      exit
+    end
+    distil_file= v
     next
   end
   
@@ -25,11 +30,16 @@ ARGV.each { |v|
   arg_settings[key.to_sym]= value
 }
 
-if (files.empty?)
-  files= ['distil.yml']
+if (!distil_file)
+  distil_file= 'distil.yml'
 else
   # Change working directory to the folder containing the build YML file.
-  Dir.chdir(File.dirname(files[0]))
+  Dir.chdir(File.dirname(distil_file))
+end
+
+if (!File.exists?(distil_file))
+  puts "#{$app_name}: can't find distil file: #{distil_file}"
+  exit
 end
 
 Task.set_global_options({
@@ -40,7 +50,7 @@ Task.set_global_options({
 # Override default settings with options from the command line
 Task.set_global_options(arg_settings)
 
-build_info= YAML.load_file(files[0])
+build_info= YAML.load_file(distil_file)
 Task.set_global_options(build_info)
 
 options= Task.options
@@ -61,7 +71,7 @@ externals.each_index { |index|
   end
 
   if (project.key?("folder") && !File.directory?(project["folder"]))
-    puts "#{file[0]}: external project folder missing: #{project["folder"]}"
+    puts "#{distil_file}: external project folder missing: #{project["folder"]}"
     exit
   end
   

@@ -33,7 +33,14 @@ class JavascriptTask < OutputTask
         
     tmp= Tempfile.new("jsl.conf")
     
-    tmp << File.read(@options.jsl_conf)
+    conf_files= [ "jsl.conf",
+                  "#{ENV['HOME']}/.jsl.conf",
+                  @options.jsl_conf
+                ]
+
+    jsl_conf= conf_files.find { |f| File.exists?(f) }
+
+    tmp << File.read(jsl_conf)
     tmp << "\n"
     
     @options.external_projects.each { |project|
