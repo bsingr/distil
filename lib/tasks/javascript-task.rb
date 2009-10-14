@@ -10,7 +10,7 @@ class JavascriptTask < OutputTask
   declare_option :bootstrap_file, "#{$script_dir}/bootstrap-template.js"
   declare_option :jsl_conf, "#{$script_dir}/jsl.conf"
   declare_option :jsdoc_conf, "#{$script_dir}/jsdoc.conf"
-  declare_option :jsdoc_template, "#{$script_dir}/jsdoc-toolkit/templates/coherent"
+  declare_option :jsdoc_template, "#{$vendor_dir}/jsdoc-toolkit/templates/coherent"
   declare_option :doc_folder, "doc"
   declare_option :generate_docs, false
   

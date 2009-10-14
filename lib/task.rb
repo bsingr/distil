@@ -31,7 +31,7 @@ class Task
   declare_option :version
   declare_option :name
   declare_option :tasks, Array
-  declare_option :targets
+  declare_option :targets, Array
   declare_option :mode
   declare_option :remove_prefix
   declare_option :external_projects, Array.new

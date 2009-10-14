@@ -32,16 +32,17 @@ function publish(symbolSet) {
 	}
 	
 	// some ustility filters
-	function hasNoParent($) {return ($.memberOf == "")}
-	function isaFile($) {return ($.is("FILE"))}
-	function isaClass($) {return ($.is("CONSTRUCTOR") || $.isNamespace)}
+	function hasNoParent($) {return (!$.memberOf);}
+	function isaFile($) {return ($.is("FILE"));}
+	function isaClass($) {return ($.is("CONSTRUCTOR") || $.isNamespace);}
 	
 	// get an array version of the symbolset, useful for filtering
 	var symbols = symbolSet.toArray();
+	var i;
 	
 	// create the hilited source code files
 	var files = JSDOC.opt.srcFiles;
- 	for (var i = 0, l = files.length; i < l; i++) {
+ 	for (i = 0, l = files.length; i < l; i++) {
  		var file = files[i];
  		var srcDir = publish.conf.outDir + "symbols/src/";
 		makeSrcFile(file, srcDir);
@@ -54,7 +55,7 @@ function publish(symbolSet) {
 	if (JSDOC.opt.u) {
 		var filemapCounts = {};
 		Link.filemap = {};
-		for (var i = 0, l = classes.length; i < l; i++) {
+		for (i = 0, l = classes.length; i < l; i++) {
 			var lcAlias = classes[i].alias.toLowerCase();
 			
 			if (!filemapCounts[lcAlias]) filemapCounts[lcAlias] = 1;
@@ -71,7 +72,7 @@ function publish(symbolSet) {
  	publish.classesIndex = classesTemplate.process(classes); // kept in memory
 	
 	// create each of the class pages
-	for (var i = 0, l = classes.length; i < l; i++) {
+	for (i = 0, l = classes.length; i < l; i++) {
 		var symbol = classes[i];
 		
 		symbol.events = symbol.getEvents();   // 1 order matters
@@ -106,11 +107,11 @@ function publish(symbolSet) {
 	var documentedFiles = symbols.filter(isaFile); // files that have file-level docs
 	var allFiles = []; // not all files have file-level docs, but we need to list every one
 	
-	for (var i = 0; i < files.length; i++) {
+	for (i = 0; i < files.length; i++) {
 		allFiles.push(new JSDOC.Symbol(files[i], [], "FILE", new JSDOC.DocComment("/** */")));
 	}
 	
-	for (var i = 0; i < documentedFiles.length; i++) {
+	for (i = 0; i < documentedFiles.length; i++) {
 		var offset = files.indexOf(documentedFiles[i].alias);
 		allFiles[offset] = documentedFiles[i];
 	}
@@ -140,12 +141,12 @@ function makeSortby(attribute) {
 			if (a > b) return 1;
 			return 0;
 		}
-	}
+	};
 }
 
 /** Pull in the contents of an external file at the given path. */
 function include(path) {
-	var path = publish.conf.templatesDir+path;
+	path = publish.conf.templatesDir+path;
 	return IO.readFile(path);
 }
 
@@ -172,25 +173,23 @@ function makeSrcFile(path, srcDir, name) {
 /** Build output for displaying function parameters. */
 function makeSignature(params) {
 	if (!params) return "()";
-	var signature = "("
-	+
-	params.filter(
-		function($) {
-			return $.name.indexOf(".") == -1; // don't show config params in signature
-		}
-	).map(
-		function($) {
-		    var name= $.name;
-		    if ($.defaultValue)
-		        name+= "="+$.defaultValue;
+	var signature = "(" +
+    	params.filter(
+    		function($) {
+    			return $.name.indexOf(".") == -1; // don't show config params in signature
+    		}
+    	).map(
+    		function($) {
+    		    var name= $.name;
+    		    if ($.defaultValue)
+    		        name+= "="+$.defaultValue;
 		        
-		    if ($.isOptional)
-		        name= "["+name+"]";
-			return name;
-		}
-	).join(", ")
-	+
-	")";
+    		    if ($.isOptional)
+    		        name= "["+name+"]";
+    			return name;
+    		}
+    	).join(", ")  +
+    	")";
 	return signature;
 }
 
