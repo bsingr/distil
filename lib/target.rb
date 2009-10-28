@@ -2,21 +2,18 @@ require "#{$script_dir}/task"
 require "set"
 
 class Target
-  attr_reader :tasks, :included_files
+  attr_reader :name, :tasks
   attr_accessor :warning_count, :error_count
-  
+
   def initialize(name, settings)
+    @name= name
+    @@current= self
+    
     if (settings.is_a?(Array))
-      include_files= settings
-      exclude_files= Array.new
-      test_files= Array.new
-      @options= Task.options({})
-    else
-      include_files= settings['include'] || Array.new
-      exclude_files= settings['exclude'] || Array.new
-      test_files= settings['test'] || Array.new
-      @options= Task.options(settings)
+      settings= { "include"=>settings }
     end
+
+    @options= Task.options(settings)
 
     FileUtils.mkdir_p(@options.output_folder)
     
@@ -26,30 +23,17 @@ class Target
       next if (!t.task_name)  
       next if (@options.tasks && !@options.tasks.include?(t.task_name))
 
-      @tasks << t.new(name, @options)
+      @tasks << t.new(self, @options)
     }
 
-    @included_files= Array.new
-    @excluded_files= Set.new
-    @assets= Set.new
-    @probed_files= Set.new
-    @ordered_files= Array.new
-    
     @warning_count=0
     @error_count=0
-    
-    exclude_files.each { |f| self.exclude_file(f) }
-    include_files.each { |f| self.include_file(f) }
   end
 
   def self.current
     @@current
   end
   
-  def self.current=(target)
-    @@current=target
-  end
-
   def error(message, file="", line_number=0)
     if (file && line_number)
       printf("%s:%d: error: %s\n", file, line_number, message)
@@ -69,7 +53,7 @@ class Target
   end
   
   def find_file(file)
-    @options.external_projects.each { |project|
+    Task.options.external_projects.each { |project|
       path= File.expand_path(File.join(project["include"], file))
       if (File.exists?(path))
         source_file= SourceFile.from_path(path)
@@ -77,76 +61,25 @@ class Target
         return source_file
       end
     }
-  end
-  
-  def include_file(file)
-    full_path= File.expand_path(file)
-
-    if File.directory?(full_path)
-      Dir.foreach(full_path) { |f|
-          next if ('.'==f[/^\./])
-          include_file(File.join(full_path, f))
-      }
-    else
-      if (File.exists?(full_path))
-        source_file= SourceFile.from_path(full_path)
-      else
-        source_file= find_file(file)
-        return if (!source_file)
-      end
-      
-      return if (@included_files.include?(source_file))
-      return if (@excluded_files.include?(source_file))
-      @included_files << source_file
-    end
-  end
-  
-  def exclude_file(file)
-    file= File.expand_path(file)
-    
-    if File.directory?(file)
-      Dir.foreach(file) { |f|
-          next if ('.'==f[/^\./])
-          exclude_file(File.join(file, f))
-      }
-    else
-      source_file= SourceFile.from_path(file)
-      
-      return if (@excluded_files.include?(source_file))
-      @excluded_files << source_file
-    end
+    nil
   end
 
-  def process_file(file)
-    
-    return if (@probed_files.include?(file))
-    return if (!@included_files.include?(file))
-
-    @probed_files << file
-    
-    file.dependencies.each { |d| process_file(d) }
-    @ordered_files << file;
-
+  def process_files
     @tasks.each { |t|
-      next if (!t.handles_file?(file))
-      @assets.merge(file.assets)
-      @assets << file
-      t.include_file(file)
-    }
-  end
-  
-  def process_all_files
-    @included_files.each { |f| process_file(f) }
-    
-    @tasks.each { |t|
+      t.find_files
       t.validate_files
       t.document_files
-      t.process_all_files
+      t.process_files
     }
   end
 
   def finish
-    @tasks.each { |t| t.finish }
+    assets= Set.new
+    
+    @tasks.each { |t|
+      t.finish
+      assets.merge(t.assets)
+    }
 
     # puts "\nincluded:"
     # @included_files.each { |f| puts f.file_path }
@@ -154,9 +87,9 @@ class Target
     # puts "\nordered:"
     # @ordered_files.each { |f| puts f.file_path }
     # puts "\nassets:"
-    # @assets.each { |a| puts a.file_path }
+    # assets.each { |a| puts a.file_path }
     
-    folders= @assets.map { |a|
+    folders= assets.map { |a|
       short_folder_name= File.dirname(a.file_path).split("/")[0]
       if ("."==short_folder_name)
         [a.file_path, a.relative_to_folder(@options.output_folder)]
@@ -180,7 +113,7 @@ class Target
     }
     
     if ("release"==@options.mode)
-      @assets.each { |a| a.copy_to(@options.output_folder) }
+      assets.each { |a| a.copy_to(@options.output_folder) }
     else
       folders.each { |f|
         target_folder= "#{@options.output_folder}/#{f[0]}"
@@ -188,6 +121,10 @@ class Target
         File.symlink source_folder, target_folder
       }
     end
+
+    @tasks.each { |t|
+      t.cleanup
+    }
     
     puts "#{@error_count} error(s), #{@warning_count} warning(s)"
   end

@@ -2,9 +2,9 @@
 <html>
     <head>
         <title>Unit Tests</title>
-        <script src="/lib/Test.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/lib/HtmlTestReporter.js" type="text/javascript" charset="utf-8"></script>
-        <script src="/lib/TestRunner.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/lib/test/Test.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/lib/test/HtmlTestReporter.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/lib/test/TestRunner.js" type="text/javascript" charset="utf-8"></script>
         <script>
             var __failures= [];
             function onfailure(m)
@@ -22,6 +22,7 @@
                     elements[p].value= statistics[p];
                 Test.reset();
                 testForm.submit();
+                __failures= [];
             }
             function iframeLoaded()
             {

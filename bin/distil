@@ -1,22 +1,19 @@
 #!/usr/bin/env ruby
 
-$script_dir= File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$script_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
 $vendor_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
 $app_name= File.basename($0)
 
-require 'yaml'
+require "yaml"
 require "#{$script_dir}/target"
 
 arg_settings= {}
-distil_file= nil
+distil_file= "distil.yml"
+args= []
 
 ARGV.each { |v|
   if (!v[/^-/])
-    if (distil_file)
-      puts "#{$app_name}: distil file already defined: #{distil_file}"
-      exit
-    end
-    distil_file= v
+    args << v
     next
   end
   
@@ -27,18 +24,21 @@ ARGV.each { |v|
   if (!value)
     value= true
   end
+  
+  if ("f"==key || "file"==key || "buildfile"==key)
+    distil_file= value
+    next
+  end
+  
   arg_settings[key.to_sym]= value
 }
 
-if (!distil_file)
-  distil_file= 'distil.yml'
-else
-  # Change working directory to the folder containing the build YML file.
-  Dir.chdir(File.dirname(distil_file))
-end
+# Change working directory to the folder containing the build YML file.
+distil_file= File.expand_path(distil_file)
+Dir.chdir(File.dirname(distil_file))
 
 if (!File.exists?(distil_file))
-  puts "#{$app_name}: can't find distil file: #{distil_file}"
+  puts "#{$app_name}: can't find project file: #{distil_file}"
   exit
 end
 
@@ -48,26 +48,22 @@ Task.set_global_options({
   })
 
 # Override default settings with options from the command line
-Task.set_global_options(arg_settings)
+Task.set_global_options(arg_settings.clone)
 
 build_info= YAML.load_file(distil_file)
 Task.set_global_options(build_info)
 
 options= Task.options
 
-# Handle externals
-externals= Task.options.external_projects
-
-externals.each_index { |index|
+# Handle external projects
+options.external_projects.map! { |project|
   
-  project= externals[index]
   if (project.is_a?(String))
     project= {
       "folder"=>project,
       "build"=>"distil",
       "include"=>File.join(project, "build")
     }
-    externals[index]= project
   end
 
   if (project.key?("folder") && !File.directory?(project["folder"]))
@@ -83,9 +79,16 @@ externals.each_index { |index|
     build= project["build"] || "distil"
     wd= Dir.pwd
     Dir.chdir(project["folder"]||project["include"])
+    # pass along mode flag to sub-projects
+    if (arg_settings.key?("mode"))
+      build= "#{build} -mode=#{arg_settings["mode"]}"
+    end
     system(build)
     Dir.chdir(wd)
   end
+  
+  # Make certain to yield a value for the map! operation.
+  project
 }
 
 build_info.each { |section, value|
@@ -98,7 +101,6 @@ build_info.each { |section, value|
   puts
     
   target= Target.new(section, value)
-  Target.current= target
-  target.process_all_files
+  target.process_files
   target.finish
 }

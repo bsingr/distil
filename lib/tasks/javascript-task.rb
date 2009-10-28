@@ -66,8 +66,8 @@ class JavascriptTask < OutputTask
     summary= output.pop
     match= summary.match(/(\d+)\s+error\(s\), (\d+)\s+warning\(s\)/)
     if (match)
-        Target.current.error_count+= match[1].to_i
-        Target.current.warning_count+= match[2].to_i
+        @target.error_count+= match[1].to_i
+        @target.warning_count+= match[2].to_i
     end
     
     output= output.join("\n")
@@ -112,7 +112,7 @@ class JavascriptTask < OutputTask
       
   end
 
-  def process_all_files
+  def process_files
     super
     template= File.read(@options.bootstrap_file)
     @debug= replace_tokens(template, {

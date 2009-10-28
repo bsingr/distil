@@ -1,8 +1,9 @@
 require "#{$script_dir}/source-file"
+require "#{$script_dir}/file-set"
 require 'set'
 
 class Task
-  attr_reader :included_files
+  attr_reader :included_files, :assets
 
   @@options={}
   @@options_type={}
@@ -19,15 +20,40 @@ class Task
 
     @@options[option_name]= default_value
     @@options_type[option_name]= case
+      when option_type==FileSet
+        self.method(:option_to_fileset)
       when option_type==Fixnum
-        :to_i
+        self.method(:option_to_number)
       when option_type==Array
-        :to_a
+        self.method(:option_to_array)
       else
-        :to_s
+        self.method(:option_to_string)
       end
   end
 
+  def self.option_to_fileset(value)
+    FileSet.new(value)
+  end
+  
+  def self.option_to_array(value)
+    case
+      when value.is_a?(String)
+        value.split(/\s*,\s*/)
+      when value.is_a?(Array)
+        value
+      else
+        [value]
+    end
+  end
+  
+  def self.option_to_string(value)
+    "#{value}"
+  end
+
+  def self.option_to_number(value)
+    value.to_i
+  end
+  
   declare_option :version
   declare_option :name
   declare_option :tasks, Array
@@ -36,9 +62,15 @@ class Task
   declare_option :remove_prefix
   declare_option :external_projects, Array.new
   
-  def initialize(target_name, options)
-    @target_name= target_name
+  def initialize(target, options)
+    @target= target
     @included_files= []
+    
+    @files_to_include= []
+    @files_to_exclude= []
+    @assets= Set.new
+    @probed= Set.new
+    
     @options= options
     if (@options.remove_prefix)
       SourceFile.root_folder= @options.remove_prefix
@@ -56,20 +88,20 @@ class Task
       type= @@options_type[key]
       
       if (hash.has_key?(key))
-        @@options[key]= hash[key].send(type)
+        @@options[key]= type.call(hash[key])
         hash.delete(key)
         next
       end
 
       hash_key= "#{key}".gsub('_', '-')
       if (hash.has_key?(hash_key))
-        @@options[key]= hash[hash_key].send(type)
+        @@options[key]= type.call(hash[hash_key])
         hash.delete(hash_key)
       end
 
       hash_key= "#{key}".gsub('_', ' ')
       if (hash.has_key?(hash_key))
-        @@options[key]= hash[hash_key].send(type)
+        @@options[key]= type.call(hash[hash_key])
         hash.delete(hash_key)
       end
     }
@@ -88,12 +120,12 @@ class Task
       
       key= m.gsub('_', '-')
       if (settings.key?(key))
-        s[m]= settings[key].send(type)
+        s[m]= type.call(settings[key])
         settings.delete(key)
       end
       key= m.gsub('_', ' ')
       if (settings.key?(key))
-        s[m]= settings[key].send(type)
+        s[m]= type.call(settings[key])
         settings.delete(key)
       end
     }
@@ -116,22 +148,55 @@ class Task
   def handles_file?(file)
     false
   end
+
+  #  Do a simple token substitution. Tokens begin and end with @.
+  def replace_tokens(string, params)
+  	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
+  		key= $2
+  		ws= $1
+  		value= params[key]||m;
+  		if (ws && ws.length)
+  			ws + value.split("\n").join(ws);
+  		else
+  			value
+  		end
+  	}
+  end
   
   def include_file(file)
+    return if @probed.include?(file)
     return if @included_files.include?(file)
+    return if !handles_file?(file)
+    return if !@files_to_include.include?(file)
+    return if @files_to_exclude.include?(file)
+
+    @probed << file
+    
+    file.dependencies.each { |d| include_file(d) }
+    @assets.merge(file.assets)
+    @assets << file
     @included_files << file
   end
 
+  def find_files
+    @probed= Set.new
+    @included_files= []
+    @files_to_include.each { |i| include_file(i) }
+  end
+  
   def validate_files
   end
   
   def document_files
   end
   
-  def process_all_files
+  def process_files
   end
   
   def finish
+  end
+  
+  def cleanup
   end
   
 end

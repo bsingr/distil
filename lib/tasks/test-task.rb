@@ -4,18 +4,25 @@
 
 
 require 'webrick'
-require "#{$script_dir}/browser.rb"
+require "#{$script_dir}/test/browser.rb"
 
 include WEBrick
 
-$unit_test_html= File.read("#{$script_dir}/unittest.html")
-$script_wrapper_html= File.read("#{$script_dir}/scriptwrapper.html")
+$unit_test_html= File.read("#{$script_dir}/test/unittest.html")
+$script_wrapper_html= File.read("#{$script_dir}/test/scriptwrapper.html")
 
-$js_task_options= {
-  "name" => "test",
-  "output-folder" => ".",
-  "include-all-files" => true
-}
+def replace_tokens(string, params)
+	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
+		key= $2
+		ws= $1
+		value= params[key]||m;
+		if (ws && ws.length)
+			ws + value.split("\n").join(ws);
+		else
+			value
+		end
+	}
+end
 
 def relative_path(file, output_folder)
 	outputFolder= File.expand_path(output_folder).to_s
@@ -35,32 +42,39 @@ def relative_path(file, output_folder)
 	return '../'*(output_parts.length-common_prefix_length) + file_parts[common_prefix_length..-1].join('/')
 end
 
-
+def order_files(file, ordered_files= Array.new, probed= Set.new)
+  return if probed.include?(file)
+  return if ordered_files.include?(file)
+  probed << file
+  
+  file.dependencies.each { |d| order_files(d, ordered_files, probed) }
+  ordered_files << file
+  
+  ordered_files
+end
+  
 #  Create an HTML wrapper file for a JavaScript file. The wrapper will include
 #  one script tag for each imported file in the script. This means you don't
 #  have to write lots of silly wrapper HTML files for your tests.
 def html_wrapper_for_script_file(script_file)
-  options= Task.options({}.merge($js_task_options))
+  source_file= SourceFile.from_path(script_file)
 
-  js= JsTask.new("test", options)
-  js.include_file(script_file)
-  
-  files= js.order_files
-  
+  files= order_files(source_file)
+
   current_dir= File.expand_path('.')
 
   files.map! { |file|
-    file= file.gsub(/-uncompressed\.js/, '-debug.js')
-    relative_path(file, current_dir)
+    # file= file.gsub(/-uncompressed\.js/, '-debug.js')
+    file.relative_to_folder(current_dir)
   }
     
   scripts= files.map { |file|
     "<script src=\"#{file}\" type=\"text/javascript\" charset=\"utf-8\"></script>"
   }
-  
+
   replace_tokens($script_wrapper_html, {
             "scripts" => scripts.join("\n"),
-            "title" => script_file
+            "title" => "#{script_file}"
           })
 end
 
@@ -159,12 +173,16 @@ end
 
 class TestTask < Task
   
-  declare_option :browsers, ['safari']
+  declare_option :browsers, Array, ['safari']
+  declare_option :tests, FileSet
+  declare_option :run_tests, false
   
-  def initialize(section, options)
-    super(section, options)
+  def initialize(target, options)
+    super(target, options)
     @result_queue= Queue.new
     @file_queue= Queue.new
+
+    @files_to_include= @options.tests.to_a
     
     @passed= 0
     @failed= 0
@@ -172,22 +190,24 @@ class TestTask < Task
   end
 
   def self.task_name
-    # Disable tests by not returning a  name
-    # "test"
+    "test"
   end
 
   def handles_file?(file_name)
-    file_name[/\.js$/] || file_name[/\.html$/]
+    "#{file_name}"[/\.js$/] || "#{file_name}"[/\.html$/]
   end
 
   def start_webserver()
     access_log_stream = File.open('/dev/null', 'w')
     access_log = [[access_log_stream, AccessLog::COMBINED_LOG_FORMAT]]
-  
+
+    # @server = HTTPServer.new(:Port=>8000)
+    #   
     @server = HTTPServer.new(:Port=>8000, :Logger=>Log.new(nil, BasicLog::WARN),
                  :AccessLog=>[])
   
     @server.mount "/wrapped", ScriptWrapper
+    @server.mount "/lib", NonCachingFileHandler, $script_dir
     @server.mount "/", NonCachingFileHandler, "."
   
     trap "INT" do @server.shutdown end
@@ -209,14 +229,18 @@ class TestTask < Task
     next_file
   end
   
-  def process_all_files()
-    order_files
-    
-    return if (0==@ordered_files.length)
+  def cleanup()
+    # find the files again, because tests often include output files, which may
+    # not be present in a clean build
+    find_files
+
+    return if (!@options.run_tests || 'false'===@options.run_tests || 'no'===@options.run_tests)
+    return if (0==@included_files.length)
     
     start_webserver
     @server.mount "/unittest", BrowserTestServlet, self
 
+    puts "browsers=#{@options.browsers.inspect}"
     browsers= @options.browsers.map { |b| "#{b}".downcase }
     
     browsers.each { |b|
@@ -226,7 +250,7 @@ class TestTask < Task
       browser.setup
       browser.visit("http://localhost:8000/unittest")
     
-      @ordered_files.each { |f|
+      @included_files.each { |f|
 
         @file_queue.push(f)
         status= @result_queue.pop

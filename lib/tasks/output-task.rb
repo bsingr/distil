@@ -8,14 +8,16 @@ class OutputTask < Task
   
   declare_option :notice
   declare_option :output_folder
-
-  def initialize(target_name, options)
-    super(target_name, options)
+  declare_option :include, FileSet
+  declare_option :exclude, FileSet
+  
+  def initialize(target, options)
+    super(target, options)
 
     type= output_extension
     return if (!type)
     
-    target_name= "#{target_name}".downcase
+    target_name= "#{target.name}".downcase
     prefix= "#{options.output_folder}/#{options.name}"
     
     if ("all"==target_name)
@@ -29,6 +31,9 @@ class OutputTask < Task
     @name_gz= "#{prefix}#{target_name}.#{type}.gz"
     @name_debug= "#{prefix}#{target_name}-debug.#{type}"
 
+    @files_to_exclude= @options.exclude.to_a
+    @files_to_include= @options.include.to_a
+    
     @concat = ""
     @debug = ""
   end
@@ -39,20 +44,6 @@ class OutputTask < Task
   
   def output_extension
     output_type
-  end
-
-  #  Do a simple token substitution. Tokens begin and end with @.
-  def replace_tokens(string, params)
-  	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
-  		key= $2
-  		ws= $1
-  		value= params[key]||m;
-  		if (ws && ws.length)
-  			ws + value.split("\n").join(ws);
-  		else
-  			value
-  		end
-  	}
   end
 
   def minify(working_file)
@@ -86,7 +77,7 @@ class OutputTask < Task
     return @notice_text
   end
 
-  def process_all_files
+  def process_files
     @included_files.each { |f|
       @concat << f.content
       @debug << f.debug_content
