@@ -80,8 +80,8 @@ options.external_projects.map! { |project|
     wd= Dir.pwd
     Dir.chdir(project["folder"]||project["include"])
     # pass along mode flag to sub-projects
-    if (arg_settings.key?("mode"))
-      build= "#{build} -mode=#{arg_settings["mode"]}"
+    if (arg_settings.key?(:mode))
+      build= "#{build} -mode=#{arg_settings[:mode]}"
     end
     system(build)
     Dir.chdir(wd)
