@@ -1,7 +1,7 @@
 /**
 	@overview
-	@date $Date: 2009-06-21 15:36:33 -0700 (Sun, 21 Jun 2009) $
-	@version $Revision: 801 $ 
+	@date $Date: 2009-10-28 16:25:32 -0700 (Wed, 28 Oct 2009) $
+	@version $Revision: 816 $ 
 	@location $HeadURL: http://jsdoc-toolkit.googlecode.com/svn/trunk/jsdoc-toolkit/app/lib/JSDOC.js $
 	@name JSDOC.js
  */
@@ -43,7 +43,7 @@ JSDOC.opt = Opt.get(
 );
 
 /** The current version string of this application. */
-JSDOC.VERSION = "2.3.0";
+JSDOC.VERSION = "2.3.3";
 
 /** Print out usage information and quit. */
 JSDOC.usage = function() {

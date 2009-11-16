@@ -32,9 +32,6 @@ if (JSDOC.opt.S) {
 	if (/^exports\./.test(symbol.alias)) {
 		symbol.srcFile.match(/(^|[\\\/])([^\\\/]+)\.js/i);
 		var fileNS = RegExp.$2;
-		symbol.alias = symbol.alias.replace(/^exports\./, fileNS);
-		symbol.name = symbol.name.replace(/^exports\./, "");
-		symbol.memberOf = fileNS;
 		
 		// need to create the namespace associated with this file first
 		if (!JSDOC.Parser.secureModules[fileNS]) {
@@ -46,13 +43,15 @@ if (JSDOC.opt.S) {
 				nsSymbol.srcFile = symbol.srcFile;
 				nsSymbol.desc = (JSDOC.Parser.symbols.getSymbol(symbol.srcFile) || {desc: ""}).desc;
 				JSDOC.Parser.addSymbol(nsSymbol);
+				}
 
+				symbol.alias = symbol.alias.replace(/^exports\./, fileNS + '.');
+				symbol.name = symbol.name.replace(/^exports\./, '');
+				symbol.memberOf = fileNS;
+				symbol.isStatic = true;
 		}
 	}
-	else { // a method that is not exported?
-		if (!symbol.isNamespace) return;
-	}
-}
+
 		// if a symbol alias is documented more than once the last one with the user docs wins
 		if (JSDOC.Parser.symbols.hasSymbol(symbol.alias)) {
  			var oldSymbol = JSDOC.Parser.symbols.getSymbol(symbol.alias);

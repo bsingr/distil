@@ -199,6 +199,11 @@ p + p
     font-size: 12px;
     margin: 10px 0;
 }
+
+.type
+{
+    font-family: "monaco", "courier new", monospace;
+}
     
 .identifier
 {

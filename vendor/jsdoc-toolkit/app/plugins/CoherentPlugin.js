@@ -19,6 +19,7 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
             this.lastSymbol.comment.tags.push(new JSDOC.DocTag("augments " + superclass.name))
             //  Default to copying the constructor...
             this.lastSymbol.desc= "Constructor inheririted from {@link " + superclass.alias + "}."
+            this.lastSymbol.desc= superclass.desc;
             this.lastSymbol.params= superclass.params;
         }
 
@@ -31,6 +32,12 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
     onSymbol: function (symbol)
     {
         this.lastSymbol = symbol;
+    },
+    
+    onSymbolLink: function(link)
+    {
+        if ('#'===link.linkText.charAt(0))
+            link.linkText= link.linkText.substring(1);
     },
     
     onDocCommentSrc: function(comment)
@@ -71,8 +78,8 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
     {
         if ('binding' !== tag.title)
             return;
-
-        tag.desc = tag.nibbleName(tag.desc);
+        tag.desc= tag.nibbleType(tag.desc);
+        tag.desc= tag.nibbleName(tag.desc);
     }
     
 });

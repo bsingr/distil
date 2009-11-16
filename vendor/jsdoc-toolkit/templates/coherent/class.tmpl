@@ -57,7 +57,7 @@
 						.join(", ")
 					+}.<br />
 				</if>
-			
+
 				{+resolveLinks(markdown(data.classDesc))+}
 				
 				<if test="!data.isBuiltin()">{# isn't defined in any file #}
@@ -69,7 +69,7 @@
 {!
     var bindings= data.comment.getTag("binding");
     bindings= bindings.sort(makeSortby("name"));
-    
+    var bindingNames= bindings.map(function(b){ return b.name; });
 !}
 			<if test="bindings.length">
 			    <a name="bindings"></a>
@@ -79,6 +79,30 @@
 			            <li><a href="#binding-{+member.name+}">{+member.name+}</a></li>
 			        </for>
 			    </ul>
+
+				<if test="data.augments.length">
+				<dl class="inheritsList">
+				<for each="parent" in="data.augments">
+				{!
+				    var symbol= JSDOC.JsDoc.symbolSet.getSymbol(parent);
+				    var parentBindings= symbol.comment.getTag("binding");
+                    parentBindings= parentBindings.filter(function(b) {
+                        return -1===bindingNames.indexOf(b.name);
+                    });
+				    parentBindings.sort(makeSortby("name"));
+				!}
+				    <if test="parentBindings.length">
+    				<dt>Bindings from {+new Link().toSymbol(parent)+}:</dt>
+    				<dd>{+
+    				    parentBindings.map(function($) {
+    				        return new Link().toSymbol(parent).inner('binding-'+$.name).withText($.name);
+    				    }).join(", ")
+    				+}</dd>
+    				</if>
+    			</for>
+    			</dl>
+    			</if>
+			    
             </if>
             
 <!-- ============================== properties summary ===================== -->
@@ -230,7 +254,7 @@
 				<div class="constructor-prototype">
 				    <if test="data.isPrivate"><span class="modifier">&lt;private&gt;</span></if>
 				    <if test="data.isStatic"><span class="modifier">&lt;static&gt;</span></if>
-				    <if test="data.type"><span class="type">{{+new Link().toSymbol(data.type)+}}</span></if>
+				    <if test="data.type">{+linkType(data.type)+}</if>
                     <span class="identifier">{+data.name+}</span><span class="argument-list">{+makeSignature(data.params)+}</span>
 				</div>
 
@@ -252,7 +276,7 @@
 						    <!--
 						    <if test="item.isOptional"><span class="modifier">&lt;Optional&gt;</span></if>
 						    -->
-						    <if test="item.type"><span class="type">{{+(new Link().toSymbol(item.type))+}}</span></if>
+						    <if test="item.type"></if>
 						    <span class="identifier">{+item.name+}</span>
 						    <if test="item.defaultValue"><span class="default-value">= {+item.defaultValue+}</span></if>
 						</dt>
@@ -288,7 +312,7 @@
 				<dl>
 					<for each="item" in="data.exceptions">
 						<dt>
-						    <if test="item.type"><span class="type">{{+new Link().toSymbol(item.type)+}}</span></if>
+						    <if test="item.type">{+linkType(item.type)+}</if>
 						    <span class="identifier">{+item.name+}</span>
 						</dt>
 						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
@@ -301,7 +325,7 @@
 				<dl>
 				<for each="item" in="data.returns">
 				    <dt>
-				        <if test="item.type"><span class="type">{{+new Link().toSymbol(item.type)+}}</span></if>
+				        <if test="item.type">{+linkType(item.type)+}</if>
 				    </dt>
 				    <dd>{+resolveLinks(markdown(item.desc))+}</dd>
 				</for>
@@ -337,6 +361,7 @@
 		            <a name="binding-{+member.name+}"></a>
 		            <h3>{+member.name+}</h3>
 		            <div class="description">
+                    <if test="member.type">{+linkType(member.type)+}</if>
 					{+resolveLinks(markdown(member.desc))+}
 					</div>
 				</div>
@@ -353,7 +378,7 @@
 					<div class="field-prototype">
 					    <if test="member.isPrivate"><span class="modifier">&lt;private&gt;</span></if>
 					    <if test="member.isStatic"><span class="modifier">&lt;static&gt;</span></if>
-					    <if test="member.type"><span class="type">{{+new Link().toSymbol(member.type)+}}</span></if>
+					    <if test="member.type">{+linkType(member.type)+}</if>
                         <span class="identifier">{+member.name+}</span>
 					    <if test="member.defaultValue"><span class="default-value">= {+member.defaultValue+}</span></if>
 					</div>
@@ -421,7 +446,7 @@
 					<div class="method-prototype">
 					    <if test="member.isPrivate"><span class="modifier">&lt;private&gt;</span></if>
 					    <if test="member.isStatic"><span class="modifier">&lt;static&gt;</span></if>
-					    <if test="member.type"><span class="type">{{+new Link().toSymbol(member.type)+}}</span></if>
+					    <if test="member.type">{+linkType(member.type)+}</if>
                         <span class="identifier">{+member.name+}</span><span class="argument-list">{+makeSignature(member.params)+}</span>
 					</div>
 
@@ -443,7 +468,7 @@
     						    <!--
     						    <if test="item.isOptional"><span class="modifier">&lt;Optional&gt;</span></if>
     						    -->
-    						    <if test="item.type"><span class="type">{{+(new Link().toSymbol(item.type))+}}</span></if>
+    						    <if test="item.type">{+linkType(item.type)+}</if>
     						    <span class="identifier">{+item.name+}</span>
     						    <if test="item.defaultValue"><span class="default-value">= {+item.defaultValue+}</span></if>
     						</dt>
@@ -479,7 +504,7 @@
     				<dl>
     					<for each="item" in="member.exceptions">
     						<dt>
-    						    <if test="item.type"><span class="type">{{+new Link().toSymbol(item.type)+}}</span></if>
+    						    <if test="item.type">{+linkType(item.type)+}</if>
     						    <span class="identifier">{+item.name+}</span>
     						</dt>
     						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
@@ -492,7 +517,7 @@
     				<dl>
     				<for each="item" in="member.returns">
     				    <dt>
-    				        <if test="item.type"><span class="type">{{+new Link().toSymbol(item.type)+}}</span></if>
+    				        <if test="item.type">{+linkType(item.type)+}</if>
     				    </dt>
     				    <dd>{+resolveLinks(markdown(item.desc))+}</dd>
     				</for>

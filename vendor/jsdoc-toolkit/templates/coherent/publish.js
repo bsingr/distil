@@ -78,6 +78,7 @@ function publish(symbolSet) {
 		symbol.events = symbol.getEvents();   // 1 order matters
 		symbol.methods = symbol.getMethods(); // 2
 		
+		Link.currentSymbol= symbol;
 		var output = "";
 		output = classTemplate.process(symbol);
 		
@@ -195,13 +196,20 @@ function makeSignature(params) {
 
 /** Find symbol {@link ...} strings in text and turn into html links */
 function resolveLinks(str, from) {
-	str = str.replace(/\{@link ([^} ]+) ?\}/gi,
+	str = str.replace(/\{@link\s+([^} ]+) ?\}/gi,
 		function(match, symbolName) {
 			return new Link().toSymbol(symbolName);
 		}
 	);
 	
 	return str;
+}
+
+function linkType(type)
+{
+    if (type.type)
+        type= type.type;
+    return '<span class="type">' + (new Link().toSymbol(type))+ '</span>';
 }
 
 load(JSDOC.opt.t+"showdown.js");
