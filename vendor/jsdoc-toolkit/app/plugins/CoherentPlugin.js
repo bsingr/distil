@@ -2,9 +2,27 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
 
     onFunctionCall: function (functionCall)
     {
-        if ('Class.create' !== functionCall.name)
-            return;
-
+        switch (functionCall.name)
+        {
+            case 'Class.create':
+                this.onClassCreate(functionCall);
+                break;
+                
+            case 'Object.extend':
+                this.onObjectExtend(functionCall);
+                break;
+        }
+    },
+    
+    onObjectExtend: function(functionCall)
+    {
+        var obj= JSDOC.Parser.symbols.getSymbolByName(functionCall.arg1);
+        var doc= "@lends " + this.lastSymbol.name;
+        functionCall.doc= "/** " + doc + " */";
+    },
+    
+    onClassCreate: function(functionCall)
+    {
         var superclass = JSDOC.Parser.symbols.getSymbolByName(functionCall.arg1);
             
         var doc = "@lends " + this.lastSymbol.name + ".prototype";
@@ -31,6 +49,7 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
     
     onSymbol: function (symbol)
     {
+        print("symbol=" + symbol.alias);
         this.lastSymbol = symbol;
     },
     

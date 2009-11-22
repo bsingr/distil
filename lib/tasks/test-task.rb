@@ -173,7 +173,7 @@ end
 
 class TestTask < Task
   
-  declare_option :browsers, Array, ['safari']
+  declare_option :browsers, ['safari']
   declare_option :tests, FileSet
   declare_option :run_tests, false
   

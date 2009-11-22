@@ -42,7 +42,7 @@
 						classType += "Class ";
 					}
 				!}
-				{+classType+}{+data.alias+}
+				{+data.alias+} {+classType+} Reference
 			</h1>
 
 <!-- ============================== class summary ========================== -->			
@@ -148,7 +148,11 @@
 
 <!-- ============================== methods summary ======================== -->
 			<if test="data.methods.length">
-				{! var ownMethods = data.methods.filter(function($){return $.memberOf == data.alias  && !$.isNamespace}).sort(makeSortby("name")); !}
+				{!
+				    var ownMethods = data.methods.filter(function($){return $.memberOf == data.alias  && !$.isNamespace}).sort(makeSortby("name"));
+				    var classMethods= ownMethods.filter(function($){return $.isStatic});
+				    var instanceMethods= ownMethods.filter(function($){return !$.isStatic});
+				!}
 				<h3>Methods</h3>
 				<if test="ownMethods.length">
 			    <ul>
@@ -247,14 +251,16 @@
 			</if>
 
 <!-- ============================== constructor details ==================== -->		
-			<if test="!data.isBuiltin() && (data.isNamespace || data.is('CONSTRUCTOR'))">
+			<if test="!data.isBuiltin() && data.is('CONSTRUCTOR')">
 			<div class="constructor">
 			    <a name="constructor"> </a>
 			    <h2>{+classType+}Detail</h2>
 				<div class="constructor-prototype">
 				    <if test="data.isPrivate"><span class="modifier">&lt;private&gt;</span></if>
+				    <!--
 				    <if test="data.isStatic"><span class="modifier">&lt;static&gt;</span></if>
 				    <if test="data.type">{+linkType(data.type)+}</if>
+				    -->
                     <span class="identifier">{+data.name+}</span><span class="argument-list">{+makeSignature(data.params)+}</span>
 				</div>
 
@@ -270,17 +276,16 @@
 				
 				<if test="data.params.length">
 				    <h4>Parameters</h4>
-					<dl>
+					<dl class="parameters">
 					<for each="item" in="data.params">
 						<dt>
-						    <!--
-						    <if test="item.isOptional"><span class="modifier">&lt;Optional&gt;</span></if>
-						    -->
-						    <if test="item.type"></if>
+						    <if test="item.type">{+linkType(item.type)+}</if>
 						    <span class="identifier">{+item.name+}</span>
 						    <if test="item.defaultValue"><span class="default-value">= {+item.defaultValue+}</span></if>
 						</dt>
+						<if test="item.desc">
 						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
+						</if>
 					</for>
 					</dl>
 				</if>
@@ -436,10 +441,10 @@
 				</for>
 			</if>
 
-<!-- ============================== method details ========================= -->		
-			<if test="defined(ownMethods) && ownMethods.length">
-			    <h2>Methods</h2>
-				<for each="member" in="ownMethods">
+<!-- ============================== class method details ========================= -->		
+			<if test="defined(classMethods) && classMethods.length">
+			    <h2>{+classType+}Methods</h2>
+				<for each="member" in="classMethods">
 				<div class="method"
 					<a name="{+Link.symbolNameToLinkName(member)+}"> </a>
 					<h3>{+member.name+}</h3>
@@ -462,7 +467,7 @@
 					
 					<if test="member.params.length">
 					    <h4>Parameters</h4>
-						<dl>
+						<dl class="parameters">
     					<for each="item" in="member.params">
     						<dt>
     						    <!--
@@ -472,7 +477,120 @@
     						    <span class="identifier">{+item.name+}</span>
     						    <if test="item.defaultValue"><span class="default-value">= {+item.defaultValue+}</span></if>
     						</dt>
+    						<if test="item.desc">
     						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
+    						</if>
+    					</for>
+						</dl>
+					</if>
+
+                    <dl class="member-details">
+    					<if test="member.srcFile != data.srcFile">
+						<dt>File:</dt>
+						<dd>{+new Link().toSrc(member.srcFile)+}</dd>
+    					</if>
+    					
+					    <if test="member.author">
+					    <dt>Author:</dt>
+					    <dd>{+member.author+}</dd>
+					    </if>
+
+					    <if test="member.deprecated">
+						<dt>Deprecated:</dt>
+						<dd>{+ resolveLinks(markdown(member.deprecated)) +}</dd>
+    					</if>
+    					
+    					<if test="member.since">
+						<dt>Since:</dt>
+						<dd>{+ member.since +}</dd>
+    					</if>
+    				</dl>
+    				
+    				<if test="member.exceptions.length">
+    				<h4>Throws</h4>
+    				<dl>
+    					<for each="item" in="member.exceptions">
+    						<dt>
+    						    <if test="item.type">{+linkType(item.type)+}</if>
+    						    <span class="identifier">{+item.name+}</span>
+    						</dt>
+    						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
+    					</for>
+    				</dl>
+    				</if>
+					
+    				<if test="member.returns.length">
+    				<h4>Returns</h4>
+    				<dl>
+    				<for each="item" in="member.returns">
+    				    <dt>
+    				        <if test="item.type">{+linkType(item.type)+}</if>
+    				    </dt>
+    				    <dd>{+resolveLinks(markdown(item.desc))+}</dd>
+    				</for>
+    				</dl>
+    				</if>
+
+					<if test="member.requires.length">
+				    <h4>Requires</h4>
+					<ul>
+					<for each="item" in="member.requires">
+						<li>{+ resolveLinks(item) +}</li>
+					</for>
+					</ul>
+					</if>
+					
+					<if test="member.see.length">
+					<h4>See</h4>
+					<ul>
+					<for each="item" in="member.see">
+						<li>{+ new Link().toSymbol(item) +}</li>
+					</for>
+					</ul>
+					</if>
+				</div>
+				</for>
+			</if>
+
+<!-- ============================== instance method details ========================= -->		
+			<if test="defined(instanceMethods) && instanceMethods.length">
+			    <h2>Instance Methods</h2>
+				<for each="member" in="instanceMethods">
+				<div class="method"
+					<a name="{+Link.symbolNameToLinkName(member)+}"> </a>
+					<h3>{+member.name+}</h3>
+					<div class="method-prototype">
+					    <if test="member.isPrivate"><span class="modifier">&lt;private&gt;</span></if>
+					    <if test="member.isStatic"><span class="modifier">&lt;static&gt;</span></if>
+					    <if test="member.type">{+linkType(member.type)+}</if>
+                        <span class="identifier">{+member.name+}</span><span class="argument-list">{+makeSignature(member.params)+}</span>
+					</div>
+
+                    <div class="description">
+					{+resolveLinks(markdown(member.desc))+}
+					</div>
+					
+					<if test="member.example.length">
+					<for each="example" in="member.example">
+    					<pre class="code">{+example+}</pre>
+					</for>
+					</if>
+					
+					<if test="member.params.length">
+					    <h4>Parameters</h4>
+						<dl class="parameters">
+    					<for each="item" in="member.params">
+    						<dt>
+    						    <!--
+    						    <if test="item.isOptional"><span class="modifier">&lt;Optional&gt;</span></if>
+    						    -->
+    						    <if test="item.type">{+linkType(item.type)+}</if>
+    						    <span class="identifier">{+item.name+}</span>
+    						    <if test="item.defaultValue"><span class="default-value">= {+item.defaultValue+}</span></if>
+    						</dt>
+    						<if test="item.desc">
+    						<dd>{+resolveLinks(markdown(item.desc))+}</dd>
+    						</if>
     					</for>
 						</dl>
 					</if>

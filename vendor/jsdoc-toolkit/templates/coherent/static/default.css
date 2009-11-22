@@ -13,12 +13,9 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 	margin: 0;
 	padding: 0;
 	border: 0;
-	x-outline: 0;
 	font-size: 100%;
 	vertical-align: baseline;
 	background: transparent;
-	x-font-weight: normal;
-	x-font-style: normal;
 }
 em, i
 {
@@ -146,7 +143,7 @@ pre.code
 
 h1
 {
-	font-size: 18px;
+	font-size: 30px;
 	font-weight: bold;
 	padding: 0;
 	margin: 20px 0 0 0;
@@ -154,7 +151,7 @@ h1
 
 h2
 {
-    font-size: 16px;
+    font-size: 24px;
     margin: 30px 0 10px 0;
 }
 
@@ -195,19 +192,18 @@ p + p
 .method-prototype,
 .constructor-prototype
 {
-    font-family: "monaco", "courier new", monospace;
+    font-family: "menlo", "monaco", "courier new", monospace;
     font-size: 12px;
     margin: 10px 0;
 }
 
-.type
+.type, code
 {
-    font-family: "monaco", "courier new", monospace;
+    font-family: "menlo", "monaco", "courier new", monospace;
 }
     
 .identifier
 {
-    font-weight: bold;
 }
 
 .type,
@@ -236,4 +232,9 @@ p + p
 {
     list-style: decimal;
     margin: 20px 0 20px 2em;
+}
+
+dd
+{
+    margin-left: 20px;
 }
