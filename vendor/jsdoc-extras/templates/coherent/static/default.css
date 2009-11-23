@@ -238,3 +238,39 @@ dd
 {
     margin-left: 20px;
 }
+
+pre.source-code
+{
+    font: 14px menlo, monaco, "courier new", monospace;
+    line-height: 18px;
+}
+
+.source-code .KEYW
+{
+    color: #933;
+}
+.source-code .COMM
+{
+    color: #999;
+    font-style: italic;
+}
+.source-code .NUMB
+{
+    color: #393;
+}
+.source-code .STRN
+{
+    color: #393;
+}
+.source-code .REGX
+{
+    color: #339;
+}
+.source-code .line
+{
+    border-right: 1px solid #999;
+    color: #666;
+    font-style: normal;
+    display: inline-block;
+    padding-right: 4px;
+}

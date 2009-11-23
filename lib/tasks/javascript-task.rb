@@ -10,7 +10,8 @@ class JavascriptTask < OutputTask
   declare_option :bootstrap_file, "#{$script_dir}/bootstrap-template.js"
   declare_option :jsl_conf, "#{$script_dir}/jsl.conf"
   declare_option :jsdoc_conf, "#{$script_dir}/jsdoc.conf"
-  declare_option :jsdoc_template, "#{$vendor_dir}/jsdoc-toolkit/templates/coherent"
+  declare_option :jsdoc_template, "#{$vendor_dir}/jsdoc-extras/templates/coherent"
+  declare_option :jsdoc_plugins, "#{$vendor_dir}/jsdoc-extras/plugins"
   declare_option :doc_folder, "doc"
   declare_option :generate_docs, false
   
@@ -92,7 +93,8 @@ class JavascriptTask < OutputTask
     conf= replace_tokens(template, {
                     "DOC_FILES"=>doc_files.join(",\n"),
                     "DOC_OUTPUT_DIR"=>@options.doc_folder,
-                    "DOC_TEMPLATE_DIR"=>@options.jsdoc_template
+                    "DOC_TEMPLATE_DIR"=>@options.jsdoc_template,
+                    "DOC_PLUGINS_DIR"=>@options.jsdoc_plugins
                 })
 
     tmp << conf

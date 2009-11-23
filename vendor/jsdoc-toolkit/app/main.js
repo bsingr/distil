@@ -30,6 +30,9 @@ function main() {
 		}
 	}
 	
+	if (JSDOC.opt.plugins)
+	    IO.includeDir(JSDOC.opt.plugins);
+	    
 	// be verbose
 	if (JSDOC.opt.v) LOG.verbose = true;
 	
@@ -50,6 +53,7 @@ function main() {
 		if (JSDOC.opt.t && SYS.slash != JSDOC.opt.t.slice(-1)) {
 			JSDOC.opt.t += SYS.slash;
 		}
+
 		
 		// verbose messages about the options we were given
 		LOG.inform("JsDoc Toolkit main() running at "+new Date()+".");

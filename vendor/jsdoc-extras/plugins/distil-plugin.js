@@ -1,4 +1,4 @@
-JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
+JSDOC.PluginManager.registerPlugin("DistilPlugin", {
 
     onFunctionCall: function (functionCall)
     {
@@ -6,6 +6,10 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
         {
             case 'Class.create':
                 this.onClassCreate(functionCall);
+                break;
+
+            case 'Class.extend':
+                this.onClassExtend(functionCall);
                 break;
                 
             case 'Object.extend':
@@ -16,8 +20,19 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
     
     onObjectExtend: function(functionCall)
     {
-        var obj= JSDOC.Parser.symbols.getSymbolByName(functionCall.arg1);
-        var doc= "@lends " + this.lastSymbol.name;
+        var objectSymbol= JSDOC.Parser.symbols.getSymbolByName(functionCall.arg1);
+        if (!objectSymbol)
+            return;
+        var doc= "@lends " + objectSymbol.name;
+        functionCall.doc= "/** " + doc + " */";
+    },
+
+    onClassExtend: function(functionCall)
+    {
+        var classSymbol= JSDOC.Parser.symbols.getSymbolByName(functionCall.arg1);
+        if (!classSymbol)
+            return;
+        var doc= "@lends " + classSymbol.name + ".prototype";
         functionCall.doc= "/** " + doc + " */";
     },
     
@@ -47,10 +62,29 @@ JSDOC.PluginManager.registerPlugin("CoherentPlugin", {
         functionCall.doc = "/** " + doc + " */";
     },
     
-    onSymbol: function (symbol)
+    //  Called during the construction of the Symbol
+    onSymbol: function(symbol)
     {
-        print("symbol=" + symbol.alias);
         this.lastSymbol = symbol;
+        
+        if (!/#constructor$/.test(symbol.name))
+            return;
+
+        var classname= symbol.name.slice(0,-12);
+        var classSymbol= JSDOC.Parser.symbols.getSymbolByName(classname);
+        if (!classSymbol)
+            return;
+
+        //  ignore the constructor
+        symbol.isIgnored= true;
+        
+        if (classSymbol.comment.tags)
+            classSymbol.comment.tags= (symbol.comment.tags||[]).concat(classSymbol.comment.tags);
+        else
+            classSymbol.comment.tags= symbol.comment.tags;
+        
+        classSymbol.params= symbol.params;
+        classSymbol.setTags();
     },
     
     onSymbolLink: function(link)

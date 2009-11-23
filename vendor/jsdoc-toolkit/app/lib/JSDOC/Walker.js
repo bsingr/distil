@@ -255,39 +255,15 @@ JSDOC.Walker.prototype.step = function() {
 			}
 			// foo: function() {}
 			else if (this.ts.look(1).is("COLON") && this.ts.look(2).is("FUNCTION")) {
-			    var originalName= name;
-			    
 				name = (this.namescope.last().alias+"."+name).replace("#.", "#");
 				
 				if (this.lastDoc) doc = this.lastDoc;
 				params = JSDOC.Walker.onParamList(this.ts.balance("LEFT_PAREN"));
 				
-				var isConstructor= ("constructor"===originalName) ||
-				                   (doc && doc.getTag("constructs").length);
-				var originalSymbol= null;
+				if (/(^|#)constructor$/.test(name)) JSDOC.PluginManager.run("onConstructorDefined", doc);
 				                   
-				if (isConstructor) {
+				if (doc && doc.getTag("constructs").length) {
 					name = name.replace(/\.prototype(\.|$)/, "#");
-					
-					/*  If the class has already been documented, fix up that
-					    symbol rather than declaring a new one.
-					 */
-					originalSymbol= JSDOC.Parser.symbols.getSymbolByName(name.replace(/#\w+$/,''));
-					if (originalSymbol)
-					{
-					
-                        var desc = originalSymbol.comment.getTag('desc');
-        
-                        if (desc.length)
-                            desc[0].title = 'class';
-                        // print("old tags=" + uneval(originalSymbol.comment.tags));
-                        if (originalSymbol.comment && originalSymbol.comment.tags &&
-                            doc && doc.tags)
-                            originalSymbol.comment.tags= doc.tags.concat(originalSymbol.comment.tags);
-                        // print("tags=" + uneval(originalSymbol.comment.tags));
-                        originalSymbol.params= params;
-                        originalSymbol.setTags();
-					}
 					
 					if (name.indexOf("#") > -1) name = name.match(/(^[^#]+)/)[0];
 					else name = this.namescope.last().alias;
@@ -304,7 +280,6 @@ JSDOC.Walker.prototype.step = function() {
 					symbol.type = inlineReturn;
 				}
 
-				if (!originalSymbol)
     				JSDOC.Parser.addSymbol(symbol);
 				
 				this.namescope.push(symbol);

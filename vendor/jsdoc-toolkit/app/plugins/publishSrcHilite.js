@@ -38,18 +38,8 @@ function JsHilite(src, charset) {
 	
 	if (!charset) charset = "utf-8";
 	
-	this.header = '<html><head><meta http-equiv="content-type" content="text/html; charset='+charset+'"> '+
-	"<style>\n\
-	BODY { color: #333; }\n\
-	PRE { font: 14px consolas, \"panic sans\", monaco, \"courier new\", monospace; line-height: 18px;}\n\
-	.KEYW {color: #933;}\n\
-	.COMM {color: #999; font-style: italic;}\n\
-	.NUMB {color: #393;}\n\
-	.STRN {color: #393;}\n\
-	.REGX {color: #339;}\n\
-	.line {border-right: 1px solid #999; color: #666; font-style: normal; display: inline-block; padding-right: 4px;}\n\
-	</style></head><body><pre>";
-	this.footer = "</pre></body></html>";
+	this.header= IO.readFile(JSDOC.opt.t + "static/code-header.html");
+	this.footer= IO.readFile(JSDOC.opt.t + "static/code-footer.html");
 	this.showLinenumbers = true;
 }
 
