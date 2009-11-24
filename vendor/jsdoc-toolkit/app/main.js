@@ -31,7 +31,21 @@ function main() {
 	}
 	
 	if (JSDOC.opt.plugins)
-	    IO.includeDir(JSDOC.opt.plugins);
+	{
+	    //  Can't use IO.includeDir because it assumes relative paths
+		if (SYS.slash != JSDOC.opt.plugins.slice(-1))
+			JSDOC.opt.plugins += SYS.slash;
+
+	    var pluginFiles= IO.ls(JSDOC.opt.plugins);
+	    var len= pluginFiles.length;
+	    
+		for (var i = 0; i < len; ++i)
+		{
+		    if ('.js'!==pluginFiles[i].slice(-3))
+		        continue;
+		    load(pluginFiles[i]);
+        }
+	}
 	    
 	// be verbose
 	if (JSDOC.opt.v) LOG.verbose = true;

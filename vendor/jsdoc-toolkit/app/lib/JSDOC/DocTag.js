@@ -187,14 +187,20 @@ JSDOC.DocTag.prototype.nibbleName = function(src) {
 		}
 	}
 	else {
-		var parts = src.match(/^(\S+)(?:\s([\s\S]*))?$/);
+		var parts = src.match(/^(\S+)(\s[\s\S]*)?$/);
 		if (parts) {
 			if (parts[1]) this.name = parts[1];
-			if (parts[2]) src = parts[2].trim();
-			else src = "";
+			if (!parts[2])
+			    src= "";
+			else 
+			{
+			    src= parts[2];
+			    parts= src.match(/^[ \t]*-[ \t]+([\s\S]*)$/);
+			    src= (parts ? parts[1] : src).trim();
+			}
 		}
-	}	
-
+	}
+	
 	return src;
 }
 

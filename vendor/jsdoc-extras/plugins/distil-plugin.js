@@ -49,9 +49,9 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
 
         if (superclass && 'CONSTRUCTOR' === superclass.isa)
         {
-            this.lastSymbol.comment.tags.push(new JSDOC.DocTag("augments " + superclass.name))
+            this.lastSymbol.comment.tags.push(new JSDOC.DocTag("augments " + superclass.name));
             //  Default to copying the constructor...
-            this.lastSymbol.desc= "Constructor inheririted from {@link " + superclass.alias + "}."
+            this.lastSymbol.desc= "Constructor inheririted from {@link " + superclass.alias + "}.";
             this.lastSymbol.desc= superclass.desc;
             this.lastSymbol.params= superclass.params;
         }
@@ -67,6 +67,9 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
     {
         this.lastSymbol = symbol;
         
+        if (symbol.comment && symbol.comment.getTag("interface").length)
+            symbol.isInterface= true;
+            
         if (!/#constructor$/.test(symbol.name))
             return;
 
@@ -95,13 +98,14 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
     
     onDocCommentSrc: function(comment)
     {
-        var src = comment.src.split('\n');
+        var src = comment.src;
 
         var indent = "";
         var indentLen = 0;
         var i;
         var l;
         
+        src= src.split('\n');
         for (i = 1; i < src.length; ++i)
         {
             l = src[i];
@@ -127,12 +131,32 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
         comment.src = lines.join('\n');
     },
     
-    onDocTag: function (tag)
+    onDocCommentTags: function(comment)
     {
-        if ('binding' !== tag.title)
+        var interfaceTag= comment.getTag("interface");
+        if (!interfaceTag || !interfaceTag.length)
             return;
-        tag.desc= tag.nibbleType(tag.desc);
-        tag.desc= tag.nibbleName(tag.desc);
+        interfaceTag= interfaceTag[0];
+        
+        if (!comment.getTag("class").length)
+            comment.tags.push(new JSDOC.DocTag("class " + interfaceTag.desc));
+        if (!comment.getTag("name").length)
+            comment.tags.push(new JSDOC.DocTag("name " + interfaceTag.name));
+    },
+    
+    onDocTag: function(tag)
+    {
+        switch (tag.title)
+        {
+            case 'binding':
+                tag.desc= tag.nibbleType(tag.desc);
+                tag.desc= tag.nibbleName(tag.desc);
+                break;
+                
+            case 'interface':
+                tag.desc= tag.nibbleName(tag.desc);
+                break;
+        }
     }
     
 });

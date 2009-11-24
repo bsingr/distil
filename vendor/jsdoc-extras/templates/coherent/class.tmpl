@@ -32,22 +32,29 @@
 						classType += "Built-In ";
 					}
 					
-					if (data.isNamespace) {
-						if (data.is('FUNCTION')) {
+					if (data.isInterface)
+					    classType += "Interface ";
+					else if (data.isNamespace)
+					{
+						if (data.is('FUNCTION'))
 							classType += "Function ";
-						}
 						classType += "Namespace ";
 					}
-					else {
+					else
+					{
 						classType += "Class ";
 					}
+					
+					var namespace= data.alias.slice(0, -1*data.name.length);
 				!}
-				{+data.alias+} {+classType+} Reference
+				<if test="namespace"><span class="namespace">{+namespace+}</span></if>{+data.name+} {+classType+} Reference
 			</h1>
 
 <!-- ============================== class summary ========================== -->			
-			<p class="description">
-				<if test="data.augments.length"><br />Extends
+			<div class="description">
+				<if test="data.augments.length">
+				    <p>
+				    Extends
 					{+
 						data.augments
 						.sort()
@@ -55,15 +62,18 @@
 							function($) { return new Link().toSymbol($); }
 						)
 						.join(", ")
-					+}.<br />
+					+}.
+					<p/>
 				</if>
 
 				{+resolveLinks(markdown(data.classDesc))+}
 				
 				<if test="!data.isBuiltin()">{# isn't defined in any file #}
-					<br /><i>Defined in: </i> {+new Link().toSrc(data.srcFile)+}.
+				<p class="definition-file">
+					<i>Defined in: </i> {+new Link().toSrc(data.srcFile)+}.
+				</p>
 				</if>
-			</p>
+			</div>
 
 <!-- Bindings summary -->
 {!
@@ -251,7 +261,7 @@
 			</if>
 
 <!-- ============================== constructor details ==================== -->		
-			<if test="!data.isBuiltin() && data.is('CONSTRUCTOR')">
+			<if test="!data.isInterface && !data.isBuiltin() && data.is('CONSTRUCTOR')">
 			<div class="constructor">
 			    <a name="constructor"> </a>
 			    <h2>{+classType+}Detail</h2>
@@ -683,10 +693,13 @@
 					<div class="description">
 						{+resolveLinks(markdown(member.desc))+}
 						<if test="member.srcFile != data.srcFile">
-							<br />
+							<p class="definition-file">
 							<i>Defined in: </i> {+new Link().toSrc(member.srcFile)+}.
+							</p>
 						</if>
-						<if test="member.author"><br /><i>Author: </i>{+member.author+}.</if>
+						<if test="member.author">
+						<p class="author"><i>Author: </i>{+member.author+}.</p>
+						</if>
 					</div>
 					
 					<if test="member.example.length">
