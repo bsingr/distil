@@ -53,19 +53,39 @@
 <!-- ============================== class summary ========================== -->			
 			<div class="description">
 				<if test="data.augments.length">
+					{!
+					    var ancestors= [];
+					    
+					    function populateAncestors(a)
+					    {
+					        var symbol=JSDOC.JsDoc.symbolSet.getSymbol(a);
+					        ancestors.push(new Link().toSymbol(a));
+					        if (symbol.augments && symbol.augments.length)
+    					        populateAncestors(symbol.augments[0]);
+    					}
+    					populateAncestors(data.augments[0]);
+					!}
 				    <p>
-				    Extends
-					{+
-						data.augments
-						.sort()
-						.map(
-							function($) { return new Link().toSymbol($); }
-						)
-						.join(", ")
-					+}.
+    					<span class="label">Inherits from</span>
+    					{+ancestors.join(" : ")+}.
 					<p/>
 				</if>
-
+				<if test="data.implementedInterfaces.length">
+					{!
+					    var implementedInterfaces= [];
+					    
+					    function linkToInterface(i)
+					    {
+					        return new Link.toSymbol(i);
+					    }
+					    implementedInterfaces= data.implementedInterfaces.map(linkToInterface);
+					!}
+				    <p>
+    					<span class="label">Conforms to</span>
+    					{+implementedInterfaces.join(", ")+}.
+					<p/>
+                </if>
+                
 				{+resolveLinks(markdown(data.classDesc))+}
 				
 				<if test="!data.isBuiltin()">{# isn't defined in any file #}
@@ -82,37 +102,38 @@
     var bindingNames= bindings.map(function(b){ return b.name; });
 !}
 			<if test="bindings.length">
+			<div class="bindings summary">
 			    <a name="bindings"></a>
 			    <h3>Bindings</h3>
 			    <ul>
 			        <for each="member" in="bindings">
 			            <li><a href="#binding-{+member.name+}">{+member.name+}</a></li>
 			        </for>
-			    </ul>
 
-				<if test="data.augments.length">
-				<dl class="inheritsList">
-				<for each="parent" in="data.augments">
-				{!
-				    var symbol= JSDOC.JsDoc.symbolSet.getSymbol(parent);
-				    var parentBindings= symbol.comment.getTag("binding");
-                    parentBindings= parentBindings.filter(function(b) {
-                        return -1===bindingNames.indexOf(b.name);
-                    });
-				    parentBindings.sort(makeSortby("name"));
-				!}
-				    <if test="parentBindings.length">
-    				<dt>Bindings from {+new Link().toSymbol(parent)+}:</dt>
-    				<dd>{+
-    				    parentBindings.map(function($) {
-    				        return new Link().toSymbol(parent).inner('binding-'+$.name).withText($.name);
-    				    }).join(", ")
-    				+}</dd>
-    				</if>
-    			</for>
-    			</dl>
-    			</if>
-			    
+    				<if test="data.augments.length">
+    				<for each="parent" in="data.augments">
+    				{!
+    				    var symbol= JSDOC.JsDoc.symbolSet.getSymbol(parent);
+    				    var parentBindings= symbol.comment.getTag("binding");
+                        parentBindings= parentBindings.filter(function(b) {
+                            return -1===bindingNames.indexOf(b.name);
+                        });
+    				    parentBindings.sort(makeSortby("name"));
+    				    parentBindings= parentBindings.map(function($) {
+        				        return new Link().toSymbol(parent).inner('binding-'+$.name).withText($.name);
+        				    });
+    				!}
+    				    <if test="parentBindings.length">
+    				    <li><h4>From {+new Link().toSymbol(parent)+}</h4></li>
+    				    <for each="member" in="parentBindings">
+			            <li>{+member+}</li>
+        				</for>
+        				</if>
+        			</for>
+        			</if>
+
+			    </ul>
+			</div>
             </if>
             
 <!-- ============================== properties summary ===================== -->
@@ -127,7 +148,7 @@
 			    </ul>
 				</if>
 				
-				<if test="data.inheritsFrom.length">
+				<if test="false && data.inheritsFrom.length">
 				<dl class="inheritsList">
 				{!
 					var borrowedMembers = data.properties.filter(function($) {return $.memberOf != data.alias});
@@ -172,7 +193,7 @@
 			    </ul>
 				</if>
 				
-				<if test="data.inheritsFrom.length">
+				<if test="false && data.inheritsFrom.length">
 				<dl class="inheritsList">
 				{!
 					var borrowedMembers = data.methods.filter(function($) {return $.memberOf != data.alias});
@@ -385,7 +406,7 @@
 
 <!-- ============================== field details ========================== -->		
 			<if test="defined(ownProperties) && ownProperties.length">
-			    <h2>Fields</h2>
+			    <h2>Properties</h2>
 				<for each="member" in="ownProperties">
 				<div class="field">
 					<a name="{+Link.symbolNameToLinkName(member)+}"> </a>

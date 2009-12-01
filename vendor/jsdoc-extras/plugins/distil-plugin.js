@@ -67,9 +67,6 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
     {
         this.lastSymbol = symbol;
         
-        if (symbol.comment && symbol.comment.getTag("interface").length)
-            symbol.isInterface= true;
-            
         if (!/#constructor$/.test(symbol.name))
             return;
 
@@ -131,29 +128,12 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
         comment.src = lines.join('\n');
     },
     
-    onDocCommentTags: function(comment)
-    {
-        var interfaceTag= comment.getTag("interface");
-        if (!interfaceTag || !interfaceTag.length)
-            return;
-        interfaceTag= interfaceTag[0];
-        
-        if (!comment.getTag("class").length)
-            comment.tags.push(new JSDOC.DocTag("class " + interfaceTag.desc));
-        if (!comment.getTag("name").length)
-            comment.tags.push(new JSDOC.DocTag("name " + interfaceTag.name));
-    },
-    
     onDocTag: function(tag)
     {
         switch (tag.title)
         {
             case 'binding':
                 tag.desc= tag.nibbleType(tag.desc);
-                tag.desc= tag.nibbleName(tag.desc);
-                break;
-                
-            case 'interface':
                 tag.desc= tag.nibbleName(tag.desc);
                 break;
         }

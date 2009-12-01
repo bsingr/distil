@@ -186,6 +186,17 @@ p + p
     margin-top: 20px;
 }
 
+.bindings.summary h4
+{
+    color: #999;
+    margin: 20px 0 0;
+}
+
+.bindings.summary h4 a
+{
+    color: #666;
+}
+
 .method + .method,
 .field + .field
 {
