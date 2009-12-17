@@ -1,6 +1,6 @@
-require "#{$script_dir}/tasks/output-task.rb"
+require "#{$script_dir}/tasks/single-output-task.rb"
 
-class CssTask < OutputTask
+class CssTask < SingleOutputTask
   
   def self.task_name
     "css"

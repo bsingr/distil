@@ -1,9 +1,7 @@
-require "#{$script_dir}/tasks/output-task.rb"
-
-class HtmlTask < Task
+class CopyTask < Task
   
   def self.task_name
-    "html"
+    "copy"
   end
   
   def initialize(target, options)
@@ -12,9 +10,12 @@ class HtmlTask < Task
     @files_to_include= @options.include.to_a
   end    
 
-  # CssTask handles files that end in .css
+  def need_to_build
+    true
+  end
+  
   def handles_file?(file_name)
-    "#{file_name}"[/\.html$/]
+    true
   end
 
 end

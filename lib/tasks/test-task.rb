@@ -173,9 +173,9 @@ end
 
 class TestTask < Task
   
-  declare_option :browsers, ['safari']
-  declare_option :tests, FileSet
-  declare_option :run_tests, false
+  option :browsers, ['safari']
+  option :tests, FileSet
+  option :run_tests, false
   
   def initialize(target, options)
     super(target, options)

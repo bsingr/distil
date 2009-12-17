@@ -1,29 +1,24 @@
 require "#{$script_dir}/task"
 require "set"
 
-class Target
-  attr_reader :name, :tasks
-  attr_accessor :warning_count, :error_count
+class Target < Configurable
+  attr_accessor :target_name, :warning_count, :error_count
 
-  def initialize(name, settings)
-    @name= name
-    @@current= self
+  option :tasks, Array
+  
+  def initialize(name, settings, project)
+    super(settings, project)
     
-    if (settings.is_a?(Array))
-      settings= { "include"=>settings }
-    end
-
-    @options= Task.options(settings)
-
-    FileUtils.mkdir_p(@options.output_folder)
+    @project= project
+    @target_name= name
+    @@current= self
     
     @tasks= []
 
-    Task.available_tasks.each { |t|
-      next if (!t.task_name)  
-      next if (@options.tasks && !@options.tasks.include?(t.task_name))
-
-      @tasks << t.new(self, @options)
+    @extras.each { |task_name, task_settings|
+      next if (tasks && !tasks.include?(task_name))
+      t= Task.by_name(task_name)
+      @tasks << t.new(self, task_settings)
     }
 
     @warning_count=0
@@ -33,27 +28,36 @@ class Target
   def self.current
     @@current
   end
-  
+
   def error(message, file="", line_number=0)
+    @error_count+=1
     if (file && line_number)
       printf("%s:%d: error: %s\n", file, line_number, message)
     else
       printf("error: %s\n", message)
     end
-    @error_count+=1
   end
   
   def warning(message, file="", line_number=0)
+    @warning_count+=1
+    return if (ignore_warnings)
     if (file && line_number)
       printf("%s:%d: warning: %s\n", file, line_number, message)
     else
       printf("warning: %s\n", message)
     end
-    @warning_count+=1
+  end
+  
+  def products
+    products= []
+    @tasks.each { |task|
+      products.concat(task.products)
+    }
+    products
   end
   
   def find_file(file)
-    Task.options.external_projects.each { |project|
+    external_projects.each { |project|
       path= File.expand_path(File.join(project["include"], file))
       if (File.exists?(path))
         source_file= SourceFile.from_path(path)
@@ -67,6 +71,9 @@ class Target
   def process_files
     @tasks.each { |t|
       t.find_files
+
+      next if !t.need_to_build
+
       t.validate_files
       t.document_files
       t.process_files
@@ -77,7 +84,7 @@ class Target
     assets= Set.new
     
     @tasks.each { |t|
-      t.finish
+      t.finish if t.need_to_build
       assets.merge(t.assets)
     }
 
@@ -112,10 +119,11 @@ class Target
       # FileUtils.rm_r target_folder if File.exists?(target_folder)
     }
     
-    if ("release"==@options.mode)
+    if ("release"==mode)
       assets.each { |a| a.copy_to(@options.output_folder) }
     else
       folders.each { |f|
+        # puts "#{f[0]}"
         target_folder= "#{@options.output_folder}/#{f[0]}"
         source_folder= f[1]
         File.symlink source_folder, target_folder
@@ -126,7 +134,7 @@ class Target
       t.cleanup
     }
     
-    puts "#{@error_count} error(s), #{@warning_count} warning(s)"
+    puts "#{@error_count} error(s), #{@warning_count} warning(s)#{ignore_warnings ? " ignored" : ""}"
   end
   
 end

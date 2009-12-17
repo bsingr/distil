@@ -1,68 +1,19 @@
 require "#{$script_dir}/source-file"
 require "#{$script_dir}/file-set"
 require 'set'
+require "#{$script_dir}/configurable"
 
-class Task
+class Task < Configurable
   attr_reader :included_files, :assets
 
-  @@options={}
-  @@options_type={}
-  
-  def self.declare_option(option_name, default_value=nil, option_type=nil)
-    if (default_value.instance_of?(Class))
-      option_type= default_value
-      default_value= nil
+  option :remove_prefix
+
+  def initialize(target, settings)
+    if (settings.is_a?(Array) || settings.is_a?(String))
+      settings= { "include"=>settings }
     end
+    super(settings, target)
     
-    if (!option_type && default_value)
-      option_type= default_value.class
-    end
-
-    @@options[option_name]= default_value
-    @@options_type[option_name]= case
-      when option_type==FileSet
-        self.method(:option_to_fileset)
-      when option_type==Fixnum
-        self.method(:option_to_number)
-      when option_type==Array
-        self.method(:option_to_array)
-      else
-        self.method(:option_to_string)
-      end
-  end
-
-  def self.option_to_fileset(value)
-    FileSet.new(value)
-  end
-  
-  def self.option_to_array(value)
-    case
-      when value.is_a?(String)
-        value.split(/\s*,\s*/)
-      when value.is_a?(Array)
-        value
-      else
-        [value]
-    end
-  end
-  
-  def self.option_to_string(value)
-    "#{value}"
-  end
-
-  def self.option_to_number(value)
-    value.to_i
-  end
-  
-  declare_option :version
-  declare_option :name
-  declare_option :tasks, Array
-  declare_option :targets, Array
-  declare_option :mode
-  declare_option :remove_prefix
-  declare_option :external_projects, Array.new
-  
-  def initialize(target, options)
     @target= target
     @included_files= []
     
@@ -71,68 +22,11 @@ class Task
     @assets= Set.new
     @probed= Set.new
     
-    @options= options
-    if (@options.remove_prefix)
-      SourceFile.root_folder= @options.remove_prefix
+    if (remove_prefix)
+      SourceFile.root_folder= remove_prefix
     end
   end
 
-  def self.options_hash
-    @@options
-  end
-  
-  def self.set_global_options(hash)
-    
-    @@options.each_pair { |key, value|
-      
-      type= @@options_type[key]
-      
-      if (hash.has_key?(key))
-        @@options[key]= type.call(hash[key])
-        hash.delete(key)
-        next
-      end
-
-      hash_key= "#{key}".gsub('_', '-')
-      if (hash.has_key?(hash_key))
-        @@options[key]= type.call(hash[hash_key])
-        hash.delete(hash_key)
-      end
-
-      hash_key= "#{key}".gsub('_', ' ')
-      if (hash.has_key?(hash_key))
-        @@options[key]= type.call(hash[hash_key])
-        hash.delete(hash_key)
-      end
-    }
-    
-  end
-  
-  def self.options(settings=nil)
-    s= Struct.new(*@@options.keys).new(*@@options.values)
-    return s if !settings
-    
-    members= @@options.keys
-
-    members.each { |m|
-      type= @@options_type[m]
-      m= m.to_s
-      
-      key= m.gsub('_', '-')
-      if (settings.key?(key))
-        s[m]= type.call(settings[key])
-        settings.delete(key)
-      end
-      key= m.gsub('_', ' ')
-      if (settings.key?(key))
-        s[m]= type.call(settings[key])
-        settings.delete(key)
-      end
-    }
-  
-    s
-  end
-  
   @@tasks= []
   def self.inherited(subclass)
     @@tasks << subclass
@@ -142,9 +36,29 @@ class Task
     @@tasks
   end
 
-  def self.task_name
+  @@task_index= nil
+  def self.task_index
+    return @@task_index if @@task_index
+    @@task_index= Hash.new
+    @@tasks.each { |t|
+      next if !t.task_name
+      @@task_index[t.task_name]= t
+    }
+    @@task_index
   end
   
+  def self.by_name(taskname)
+    self.task_index[taskname]
+  end
+  
+  def self.task_name
+    nil
+  end
+  
+  def task_name
+    self.class.task_name
+  end
+    
   def handles_file?(file)
     false
   end
@@ -182,6 +96,31 @@ class Task
     @probed= Set.new
     @included_files= []
     @files_to_include.each { |i| include_file(i) }
+  end
+  
+  def products
+    []
+  end
+  
+  def need_to_build
+    return @need_to_build if !@need_to_build.nil?
+    
+    product_modification_times= products.map { |p|
+      p=File.expand_path(p)
+      return (@need_to_build=true) if !File.exists?(p)
+      File.stat(p).mtime
+    }
+    oldest_product_modification_time= product_modification_times.max
+    
+    @assets.each { |a|
+      stat= File.stat(a)
+      if stat.mtime > oldest_product_modification_time
+        puts "newer: #{a}"
+      end
+      return (@need_to_build=true) if stat.mtime > oldest_product_modification_time
+    }
+    
+    return (@need_to_build=false)
   end
   
   def validate_files

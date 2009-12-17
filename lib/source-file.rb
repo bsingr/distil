@@ -63,13 +63,17 @@ class SourceFile
   end
 
   def error(message, line_number=0)
-    Target.current.error(message, self.file_path, line_number)
+    Target.current.error(message, self, line_number)
   end
 
   def warning(message, line_number=0)
-    Target.current.warning(message, self.file_path, line_number)
+    Target.current.warning(message, self, line_number)
   end
 
+  def basename(suffix="")
+    return File.basename(@full_path, suffix)
+  end
+  
   def file_path
     @file_path || self.relative_to_folder(@@root_folder)
   end
