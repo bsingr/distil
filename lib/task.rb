@@ -114,9 +114,6 @@ class Task < Configurable
     
     @assets.each { |a|
       stat= File.stat(a)
-      if stat.mtime > oldest_product_modification_time
-        puts "newer: #{a}"
-      end
       return (@need_to_build=true) if stat.mtime > oldest_product_modification_time
     }
     
