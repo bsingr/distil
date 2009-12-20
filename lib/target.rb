@@ -81,54 +81,12 @@ class Target < Configurable
   end
 
   def finish
-    assets= Set.new
-    
     @tasks.each { |t|
       t.finish if t.need_to_build
-      assets.merge(t.assets)
+      t.copy_assets
+      # assets.merge(t.assets)
     }
 
-    # puts "\nincluded:"
-    # @included_files.each { |f| puts f.file_path }
-    # 
-    # puts "\nordered:"
-    # @ordered_files.each { |f| puts f.file_path }
-    # puts "\nassets:"
-    # assets.each { |a| puts a.file_path }
-    
-    folders= assets.map { |a|
-      short_folder_name= File.dirname(a.file_path).split("/")[0]
-      if ("."==short_folder_name)
-        [a.file_path, a.relative_to_folder(@options.output_folder)]
-      else      
-        short_folder_regex= /.*\/#{Regexp.escape(short_folder_name)}\//
-        # puts "#{a.file_path}: #{short_folder_regex.inspect}: #{a.relative_to_folder(@options.output_folder)}"
-        relative_folder_name= (a.relative_to_folder(@options.output_folder))[short_folder_regex]
-        [short_folder_name, relative_folder_name]
-      end
-    }
-    folders.compact!
-    folders.uniq!
-    
-    # puts "\nfolders:"
-    # folders.each { |f| puts f.inspect }
-    
-    folders.each { |f|
-      target_folder= "#{@options.output_folder}/#{f[0]}"
-      FileUtils.rm target_folder if File.symlink?(target_folder)
-      # FileUtils.rm_r target_folder if File.exists?(target_folder)
-    }
-    
-    if ("release"==mode)
-      assets.each { |a| a.copy_to(@options.output_folder) }
-    else
-      folders.each { |f|
-        # puts "#{f[0]}"
-        target_folder= "#{@options.output_folder}/#{f[0]}"
-        source_folder= f[1]
-        File.symlink source_folder, target_folder
-      }
-    end
 
     @tasks.each { |t|
       t.cleanup

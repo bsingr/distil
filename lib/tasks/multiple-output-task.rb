@@ -9,6 +9,10 @@ class MultipleOutputTask < OutputTask
     return if (!type)
     
     target_name= "#{target.target_name}".downcase
+    if ('all'!=target_name)
+      @options.output_folder= File.join(output_folder, target_name)
+    end
+    
     prefix= "#{output_folder}/"
     
     # if ("all"!=target_name)
@@ -16,7 +20,7 @@ class MultipleOutputTask < OutputTask
     # end
     
     # @options.output_folder= prefix
-    FileUtils.mkdir_p(prefix)
+    FileUtils.mkdir_p(output_folder)
     
     @prefix= prefix
     @concat= Hash.new
@@ -45,6 +49,9 @@ class MultipleOutputTask < OutputTask
     debug= ""
 
     file.dependencies.each { |depend|
+      next if !@files_to_include.include?(depend)
+      next if @files_to_exclude.include?(depend)
+      
       concat << depend.content
       debug << depend.debug_content
     }

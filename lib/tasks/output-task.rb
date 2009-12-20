@@ -63,7 +63,7 @@ class OutputTask < Task
       else
         text= File.read(notice_file).strip
         text= "    #{text}".gsub(/\n/, "\n    ")
-        @notice_text= "/*\n#{text}\n*/\n\n"
+        @notice_text= "/*!\n#{text}\n*/\n\n"
       end
     end
   
