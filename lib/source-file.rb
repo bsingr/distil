@@ -31,6 +31,9 @@ class SourceFile
     self.class.extension
   end
   
+  def minify_content_type
+  end
+  
   @@file_types= []
   def self.inherited(subclass)
     @@file_types << subclass
@@ -39,7 +42,6 @@ class SourceFile
   @@file_cache= Hash.new
   def self.from_path(filepath)
     full_path= File.expand_path(filepath)
-    
     file= @@file_cache[full_path]
     return file if file
     
@@ -71,7 +73,7 @@ class SourceFile
   end
 
   def basename(suffix="")
-    return File.basename(@full_path, suffix)
+    File.basename(@full_path, suffix)
   end
   
   def file_path
@@ -82,19 +84,50 @@ class SourceFile
     @file_path=path
   end
   
+  def has_file_path
+    @file_path
+  end
+  
   def content
     @content ||= File.read(@full_path)
   end
 
-  def debug_content
-    self.content
+  def content_relative_to_destination(destination)
+    content.gsub(/\{\{FILEREF\(([^)]*)\)\}\}/) { |match|
+      file= SourceFile.from_path($1)
+      file.relative_to_folder(destination)
+    }
+  end
+
+  def debug_content_relative_to_destination(destination)
+    self.content_relative_to_destination(destination)
   end
   
-  def relative_to_folder(output_folder)
-    outputFolder= File.expand_path(output_folder).to_s
+  def minify_content(source)
+  	# Run the Y!UI Compressor
+    return source if !minify_content_type
+  	buffer= ""
+    
+  	IO.popen("java -jar #{$compressor} --type #{minify_content_type}", "r+") { |pipe|
+  	  pipe.puts(source)
+  	  pipe.close_write
+  	  buffer= pipe.read
+	  }
+	  
+    # buffer = `java -jar #{$compressor} --type #{type} #{working_file}`
+  	if ('css'==minify_content_type)
+  		# puts each rule on its own line, and deletes @import statements
+  		return buffer.gsub(/\}/,"}\n").gsub(/.*@import url\(\".*\"\);/,'')
+  	else
+  		return buffer
+  	end
+  end
+  
+  def self.path_relative_to_folder(path, folder)
+    outputFolder= File.expand_path(folder).to_s
   
     # Remove leading slash and split into parts
-    file_parts= @full_path.slice(1..-1).split('/');
+    file_parts= path.slice(1..-1).split('/');
     output_parts= outputFolder.slice(1..-1).split('/');
 
     common_prefix_length= 0
@@ -105,6 +138,10 @@ class SourceFile
     }
 
     return '../'*(output_parts.length-common_prefix_length) + file_parts[common_prefix_length..-1].join('/')
+  end
+  
+  def relative_to_folder(output_folder)
+    self.class.path_relative_to_folder(@full_path, output_folder)
   end
 
   def relative_to_file(source_file)

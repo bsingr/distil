@@ -7,6 +7,10 @@ class JavascriptFile < SourceFile
     ".js"
   end
 
+  def minify_content_type
+    "js"
+  end
+
   def content
     return @content if (@content && @root_folder==@@root_folder)
 
@@ -55,8 +59,8 @@ class JavascriptFile < SourceFile
         else
           asset= SourceFile.from_path(import_file)
           @assets << asset
-          include_content= asset.content.gsub("\\", "\\\\").gsub(/>\s+</, "><").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
-          "INC('#{asset.file_path}','#{include_content}')"
+          # include_content= asset.content.gsub("\\", "\\\\").gsub(/>\s+</, "><").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+          "INC('{{FILEREF(#{asset})}}','{{CONTENTREF(#{asset})}}')"
         end
         
       }
@@ -67,8 +71,19 @@ class JavascriptFile < SourceFile
     @content= content.join("\n") + "\n"
   end
 
-  def debug_content
-    "loadScript(\"#{self.file_path}\");\n"
+  def content_relative_to_destination(destination)
+    relative= super(destination)
+    relative.gsub(/\{\{CONTENTREF\(([^)]*)\)\}\}/) { |match|
+      file= SourceFile.from_path($1)
+      included_content= file.content_relative_to_destination(destination)
+      included_content= file.minify_content(included_content)
+      included_content.gsub("\\", "\\\\").gsub(/>\s+</, "><").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+    }
+  end
+  
+  def debug_content_relative_to_destination(destination)
+    path= @file_path ? @file_path : self.relative_to_folder(destination)
+    "loadScript(\"#{path}\");\n"
   end
 
 end

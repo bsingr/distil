@@ -4,6 +4,10 @@ class CssFile < SourceFile
     ".css"
   end
 
+  def minify_content_type
+    "css"
+  end
+  
   def content
     return @content if (@content && @root_folder==@@root_folder)
 
@@ -46,13 +50,13 @@ class CssFile < SourceFile
         image_file= File.join(@parent_folder, $1)
 
         if (!File.exists?(image_file))
-          warning "resource not found: #{$1}", line_num
+          warning "resource not found: #{$1} (#{image_file})", line_num
           "url(\"#{$1}\")"
         else
           asset= SourceFile.from_path(image_file)
           @assets << asset
           # dependency.dependencies
-          "url(\"#{asset.file_path}\")"
+          "url(\"{{FILEREF(#{asset})}}\")"
         end
       }
     }
@@ -60,8 +64,8 @@ class CssFile < SourceFile
     @content= lines.join("\n")
   end
 
-  def debug_content
-    "@import url(\"#{self.file_path}\");\n"
+  def debug_content_relative_to_destination(destination)
+    "@import url(\"#{self.relative_to_folder(destination)}\");\n"
   end
   
 end

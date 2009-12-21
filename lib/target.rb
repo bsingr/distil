@@ -83,10 +83,8 @@ class Target < Configurable
   def finish
     @tasks.each { |t|
       t.finish if t.need_to_build
-      t.copy_assets
-      # assets.merge(t.assets)
+      t.build_assets
     }
-
 
     @tasks.each { |t|
       t.cleanup

@@ -132,7 +132,58 @@ class Task < Configurable
   def finish
   end
   
+  def symlink_assets
+    full_root_path= File.expand_path(remove_prefix||"")
+    
+    folders= []
+
+    assets.each { |a|
+      path= a.has_file_path ? a.file_path : a.relative_to_folder(full_root_path)
+
+      parts= File.dirname(path).split(File::SEPARATOR)
+      if ('.'==parts[0])
+        target_path= File.join(output_folder, path)
+        FileUtils.rm target_path if File.exists? target_path
+        File.symlink a.full_path, target_path
+        next
+      end
+
+      for i in (0..parts.length-1)
+        f= parts[0..i].join(File::SEPARATOR)
+        if !folders.include?(f)
+          folders << f
+        end
+      end
+      
+    }
+    
+    folders.sort!
+    folders.each { |f|
+      # puts "#{File.join(remove_prefix, f)} => #{File.join(output_folder, f)}"
+      src_folder= remove_prefix ? File.join(remove_prefix, f) : f
+      target_folder= File.expand_path(File.join(output_folder, f))
+      next if File.exists?(target_folder)
+      File.symlink File.expand_path(src_folder), target_folder
+    }
+    
+    # puts "#{task_name}: folder=#{folders.inspect}"
+  end
+  
   def copy_assets
+    assets.each { |a|
+      a.copy_to(output_folder)
+    }
+  end
+  
+  def build_assets
+    if ("release"==mode)
+      copy_assets
+    else
+      symlink_assets
+    end
+  end
+  
+  def copy_assets_orig
     # puts "\nincluded:"
     # @included_files.each { |f| puts f.file_path }
     # 

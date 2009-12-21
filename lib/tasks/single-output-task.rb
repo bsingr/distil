@@ -29,9 +29,10 @@ class SingleOutputTask < OutputTask
   end
 
   def process_files
+    destination= File.expand_path(remove_prefix||"")
     @included_files.each { |f|
-      @concat << f.content
-      @debug << f.debug_content
+      @concat << f.content_relative_to_destination(destination)
+      @debug << f.debug_content_relative_to_destination(destination)
     }
   end
 
@@ -51,7 +52,7 @@ class SingleOutputTask < OutputTask
     }
     
     concat= replace_tokens(@concat, params)
-
+    
     File.open(@name_concat, "w") { |f|
       f.write(notice_text)
       f.write(concat)

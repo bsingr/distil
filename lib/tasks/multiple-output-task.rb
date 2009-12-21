@@ -48,16 +48,18 @@ class MultipleOutputTask < OutputTask
     concat= ""
     debug= ""
 
+    destination= File.expand_path(remove_prefix||"")
+    
     file.dependencies.each { |depend|
       next if !@files_to_include.include?(depend)
       next if @files_to_exclude.include?(depend)
       
-      concat << depend.content
-      debug << depend.debug_content
+      concat << depend.content_relative_to_destination(destination)
+      debug << depend.debug_content_relative_to_destination(destination)
     }
     
-    concat << file.content
-    debug << file.debug_content
+    concat << file.content_relative_to_destination(destination)
+    debug << file.debug_content_relative_to_destination(destination)
     
     @concat[file]= concat
     @debug[file]= debug
