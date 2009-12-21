@@ -1,10 +1,14 @@
 $jsl_import_regex= /\/\*jsl:import\s+([^\*]*)\*\//
-$include_regex= /INC\(['"]([^)]+)['"]\)/
+$include_regex= /NIB\.asset\(['"]([^)]+)['"]\)/
 
 class JavascriptFile < SourceFile
 
   def self.extension
     ".js"
+  end
+
+  def can_embed_as_content
+    true
   end
 
   def minify_content_type
@@ -54,13 +58,18 @@ class JavascriptFile < SourceFile
         import_file= File.expand_path(File.join(@parent_folder, $1))
 
         if (!File.exists?(import_file))
-          error "Missing import file: #{$1}", file_name, line_num
-          "INC('#{$1}')"
+          error "Missing import file: #{$1}", line_num
+          "NIB.asset('#{$1}')"
         else
           asset= SourceFile.from_path(import_file)
           @assets << asset
-          # include_content= asset.content.gsub("\\", "\\\\").gsub(/>\s+</, "><").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
-          "INC('{{FILEREF(#{asset})}}','{{CONTENTREF(#{asset})}}')"
+          if (asset.can_embed_as_content)
+            "NIB.asset('{{FILEREF(#{asset})}}','{{CONTENTREF(#{asset})}}')"
+          else
+            "NIB.asset('{{FILEREF(#{asset})}}')"
+            # include_content= asset.content.gsub("\\", "\\\\").gsub(/>\s+</, "><").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+            # "INC('{{FILEREF(#{asset})}}','{{CONTENTREF(#{asset})}}')"
+          end
         end
         
       }

@@ -31,6 +31,10 @@ class SourceFile
     self.class.extension
   end
   
+  def can_embed_as_content
+    false
+  end
+  
   def minify_content_type
   end
   

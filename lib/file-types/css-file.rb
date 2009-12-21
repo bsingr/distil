@@ -4,6 +4,10 @@ class CssFile < SourceFile
     ".css"
   end
 
+  def can_embed_as_content
+    true
+  end
+
   def minify_content_type
     "css"
   end
