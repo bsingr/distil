@@ -14,13 +14,26 @@ class JavascriptTask < SingleOutputTask
   option :jsdoc_plugins, "#{$vendor_dir}/jsdoc-extras/plugins"
   option :doc_folder, "doc"
   option :generate_docs, false
+  option :class_list, ""
+  option :class_list_template, "#{$vendor_dir}/jsdoc-extras/templates/classlist"
+
+  output_type "js"
   
   def self.task_name
     "js"
   end
   
-  def output_type
-    "js"
+  def initialize(target, options)
+    super(target, options)
+    @concatenation_join_string = "\n/*jsl:ignore*/;/*jsl:end*/\n"
+    
+    if (!class_list.empty?)
+      @products << File.join(output_folder, class_list)
+    end
+    
+    if (generate_docs)
+      @products << File.join(doc_folder, "index.html")
+    end
   end
   
   # JsTask handles files that end in .js
@@ -44,7 +57,7 @@ class JavascriptTask < SingleOutputTask
     tmp << File.read(jsl_conf)
     tmp << "\n"
     
-    @options.external_projects.each { |project|
+    external_projects.each { |project|
       tmp << "+include #{project["include"]}\n"
     }
     
@@ -80,21 +93,60 @@ class JavascriptTask < SingleOutputTask
       
   end
 
+  def generate_class_list()
+    tmp= Tempfile.new("jsdoc.conf")
+    
+    template= File.read(@options.jsdoc_conf)
+    doc_files= @included_files.map { |f|
+      p= f.file_path || f.relative_to_folder(options.remove_prefix||"")
+      "\"#{p}\""
+    }
+    
+    class_list_output= File.join(output_folder, class_list)
+    
+    conf= replace_tokens(template, {
+                    "DOC_FILES"=>doc_files.join(",\n"),
+                    "DOC_OUTPUT_DIR"=>output_folder,
+                    "DOC_TEMPLATE_DIR"=>class_list_template,
+                    "DOC_PLUGINS_DIR"=>jsdoc_plugins
+                })
+
+    tmp << conf
+    tmp.close()
+    
+    command= "#{$jsdoc_command} -c=#{tmp.path}"
+    
+    stdin, stdout, stderr= Open3.popen3(command)
+    stdin.close
+    output= stdout.read
+    errors= stderr.read
+
+    tmp.delete
+    
+    puts errors
+    puts output
+  end
+  
   def document_files()
-      
-    return if (!@options.generate_docs)
+
+    generate_class_list() if (!class_list.empty?)
+    
+    return if (!generate_docs)
     return if (!File.exists?($jsdoc_command))
     
     tmp= Tempfile.new("jsdoc.conf")
     
     template= File.read(@options.jsdoc_conf)
-    doc_files= @included_files.map { |f| "\"#{f.file_path}\"" }
+    doc_files= @included_files.map { |f|
+      p= f.file_path || f.relative_to_folder(options.remove_prefix||"")
+      "\"#{p}\""
+    }
     
     conf= replace_tokens(template, {
                     "DOC_FILES"=>doc_files.join(",\n"),
-                    "DOC_OUTPUT_DIR"=>@options.doc_folder,
-                    "DOC_TEMPLATE_DIR"=>@options.jsdoc_template,
-                    "DOC_PLUGINS_DIR"=>@options.jsdoc_plugins
+                    "DOC_OUTPUT_DIR"=>doc_folder,
+                    "DOC_TEMPLATE_DIR"=>jsdoc_template,
+                    "DOC_PLUGINS_DIR"=>jsdoc_plugins
                 })
 
     tmp << conf

@@ -22,17 +22,24 @@ class FileSet
           next if ('.'==f[/^\./])
           include_file(File.join(full_path, f))
       }
-    else
-      if (File.exists?(full_path))
-        source_file= SourceFile.from_path(full_path)
-      else
-        source_file= Target.current.find_file(file)
-        return if (!source_file)
-      end
-      
-      return if (@files.include?(source_file))
-      @files << source_file
+      return
     end
+
+    files= Dir.glob(full_path)
+    if (files.length)
+      files.each { |f|
+        source_file= SourceFile.from_path(f)
+        next if (@files.include?(source_file))
+        @files << source_file
+      }
+      return
+    end
+    
+    # file not found by globbing (would also find explicit reference)
+    source_file= Project.current.find_file(file)
+    return if (!source_file)
+    return if (@files.include?(source_file))
+    @files << source_file
   end
   
   def each

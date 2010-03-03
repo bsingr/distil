@@ -70,16 +70,14 @@
     					{+ancestors.join(" : ")+}.
 					<p/>
 				</if>
-				<if test="data.implementedInterfaces.length">
-					{!
-					    var implementedInterfaces= [];
-					    
-					    function linkToInterface(i)
-					    {
-					        return new Link.toSymbol(i);
-					    }
-					    implementedInterfaces= data.implementedInterfaces.map(linkToInterface);
-					!}
+				{!
+				    function linkToInterface(i)
+				    {
+				        return new Link().toSymbol(i.name);
+				    }
+				    var implementedInterfaces= data.comment.getTag("implements").map(linkToInterface);
+				!}
+				<if test="implementedInterfaces.length">
 				    <p>
     					<span class="label">Conforms to</span>
     					{+implementedInterfaces.join(", ")+}.

@@ -6,9 +6,12 @@ class JsonFile < JavascriptFile
     ".json"
   end
 
+  def content_type
+    "js"
+  end
+  
   def minify_content(source)
     super("(#{source})")[1..-3]
-    
   end
   
 end

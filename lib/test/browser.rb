@@ -33,7 +33,7 @@ class FirefoxBrowser < Browser
   end
 
   def visit(url)
-    system("open -a \"Firefox 3.5.app\" '#{url}'") if macos?
+    system("open -a \"Firefox.app\" '#{url}'") if macos?
     system("#{@path} #{url}") if windows? 
     system("firefox #{url}") if linux?
   end

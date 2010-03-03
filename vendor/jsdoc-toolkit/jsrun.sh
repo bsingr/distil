@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 # launcher script for jsdoc
 # Author: Avi Deitcher
@@ -48,6 +48,5 @@ else
 fi
 
 CMD="java $_DOCDIR $_TDIR -jar $_BASEDIR/jsrun.jar $_APPDIR/run.js $@"
-echo $CMD
 $CMD
 

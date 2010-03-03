@@ -66,6 +66,42 @@ class Configurable
     s
   end
 
+  def self.class_attr(name)
+    if (@class_attributes.nil?)
+      @class_attributes=[name]
+    else
+      @class_attributes<<name
+    end
+    
+    class_eval %(
+          def self.#{name}(*rest)
+            if (rest.length>0)
+              @#{name}= rest[0]
+            else
+              @#{name}
+            end
+          end
+          def self.#{name}=(value)
+            @#{name}= value
+          end
+          def #{name}
+            @#{name} || self.class.#{name}
+          end
+          def #{name}=(value)
+            @#{name}=value
+          end
+        )
+        
+  end
+  
+  def self.inherited(subclass)
+    super(subclass)
+    (@class_attributes||[]).each { |a|
+        instance_var = "@#{a}"
+        subclass.instance_variable_set(instance_var, instance_variable_get(instance_var))
+      }
+  end
+  
   # option name, [type], [default], [options]
   def self.option(name, *rest)
   

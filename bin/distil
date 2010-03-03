@@ -41,5 +41,4 @@ if (!File.exists?(project_file))
 end
 
 project= Project.new(project_file, arg_settings)
-project.build_external_projects
-project.build_targets
+project.build

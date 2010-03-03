@@ -16,16 +16,19 @@ class OutputTask < Task
     FileUtils.mkdir_p(output_folder)
   end
 
-  def output_type
-    nil
-  end
+  class_attr :output_type
+  class_attr :content_type
   
-  def source_type
-    output_type
+  def self.content_type(*rest)
+    if (rest.length>0)
+      @content_type= rest[0]
+    else
+      @content_type || output_type
+    end
   end
   
   def output_extension
-    output_type
+    output_type && ".#{output_type}"
   end
 
   def products
@@ -36,7 +39,7 @@ class OutputTask < Task
   	# Run the Y!UI Compressor
   	buffer= ""
   	
-  	IO.popen("java -jar #{$compressor} --type #{source_type}", "r+") { |pipe|
+  	IO.popen("java -jar #{$compressor} --type #{content_type}", "r+") { |pipe|
   	  pipe.puts(source)
   	  pipe.close_write
   	  buffer= pipe.read

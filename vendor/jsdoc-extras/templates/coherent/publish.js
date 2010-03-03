@@ -69,7 +69,14 @@ function publish(symbolSet) {
 	
 	// create a class index, displayed in the left-hand column of every class page
 	Link.base = "../";
- 	publish.classesIndex = classesTemplate.process(classes); // kept in memory
+
+	var summary= generateJsonSummary(symbols);
+	
+    // publish.classesIndex = classesTemplate.process(classes); // kept in memory
+ 	publish.classesIndex = publishClassListSummary(summary); // kept in memory
+	
+	var classesJson= publishJsonSummary(summary);
+	IO.saveFile(publish.conf.outDir, "all-classes.json", classesJson);
 	
 	// create each of the class pages
 	for (i = 0, l = classes.length; i < l; i++) {
@@ -239,4 +246,118 @@ function copyFile(file, destFolder)
         return;
     
     IO.copyFile(file, destFolder);
+}
+
+function generateJsonSummary(symbols)
+{
+    var namespaces= {};
+    
+    var global;
+    var hrefRegex= /href="([^"]*)"/;
+    
+    symbols.forEach(function(symbol) {
+        var parentNamespace= namespaces[symbol.memberOf || "_global_"];
+        if (!symbol.isNamespace && !symbol.is("CONSTRUCTOR"))
+            return;
+        var link= new Link().toClass(symbol.alias).withText(symbol.name).toString();
+        var linkHref= link.match(hrefRegex)[1];
+        
+        if (!symbol.isNamespace)
+        {
+            var classInfo= {
+                name: symbol.name,
+                isa: "CLASS",
+                linkHref: linkHref,
+                link: link
+            };
+            // if (!parentNamespace)
+            //     print("missing parent namespace: " + (symbol.memberOf || "_global_"));
+            if (parentNamespace)
+                parentNamespace.symbols.push(classInfo);
+            return;
+        }
+
+        var namespace=  namespaces[symbol.alias]= {
+            name: symbol.name,
+            isa: "NAMESPACE",
+            linkHref: linkHref,
+            link: link,
+            
+            // symbol: symbol,
+            namespaces: [],
+            symbols: []
+        };
+
+        if ('_global_'===symbol.name)
+            global= namespace;
+
+        //  Link to parent
+        // if (!parentNamespace)
+        //     print("missing parent namespace: " + (symbol.memberOf || "_global_"));
+        if (parentNamespace)
+            parentNamespace.namespaces.push(namespace);
+    });
+
+    //  sort the namespaces and symbols
+    var sorter=makeSortby("name");
+    
+    for (var name in namespaces)
+    {
+        namespace= namespaces[name];
+        namespace.symbols= namespace.symbols.sort(sorter);
+        namespace.namespaces= namespace.namespaces.sort(sorter);
+    }
+
+    return global;
+}
+
+function publishJsonSummary(summary)
+{
+	var namespaceTemplate= new JSDOC.JsPlate(publish.conf.templatesDir+"namespace-json.tmpl");
+    var classTemplate= new JSDOC.JsPlate(publish.conf.templatesDir+"class-json.tmpl");
+
+    var data= {
+        namespaceTemplate: namespaceTemplate,
+        classTemplate: classTemplate,
+        symbolTemplate: classTemplate,
+        node: summary
+    };
+    
+    return namespaceTemplate.process(data);
+}
+    
+function publishJsonSymbol(data, node)
+{
+    var newData= {};
+    for (var p in data)
+        newData[p]= data[p];
+    newData.node= node;
+    if ("NAMESPACE"===node.isa)
+        return data.namespaceTemplate.process(newData);
+    else
+        return data.symbolTemplate.process(newData);
+}
+
+function publishClassListSummary(summary)
+{
+	var namespaceTemplate= new JSDOC.JsPlate(publish.conf.templatesDir+"all-classes.tmpl");
+
+    var data= {
+        namespaceTemplate: namespaceTemplate,
+        node: summary
+    };
+    
+    return namespaceTemplate.process(data);
+}
+
+function publishClassListNamespace(data, node)
+{
+    var newData= {};
+    for (var p in data)
+        newData[p]= data[p];
+    newData.node= node;
+    if ("NAMESPACE"===node.isa)
+        return data.namespaceTemplate.process(newData);
+    else
+        return data.symbolTemplate.process(newData);
 }

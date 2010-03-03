@@ -131,6 +131,16 @@ pre.code
     margin: 20px 0 0 0;
 }
 
+#index ul
+{
+    margin-left: 10px;
+}
+
+#index ul.namespaces + ul.classes
+{
+    margin-top: 20px;
+}
+
 #content
 {
     margin-left: 300px;

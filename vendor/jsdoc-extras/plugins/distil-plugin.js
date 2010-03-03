@@ -1,3 +1,4 @@
+/*jsl:declare JSDOC*/
 JSDOC.PluginManager.registerPlugin("DistilPlugin", {
 
     onFunctionCall: function (functionCall)
@@ -5,6 +6,7 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
         switch (functionCall.name)
         {
             case 'Class.create':
+            case 'Class._create':
                 this.onClassCreate(functionCall);
                 break;
 
@@ -96,6 +98,19 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
     onDocCommentSrc: function(comment)
     {
         var src = comment.src;
+        var _this= this;
+        // if (/@method\b/.test(src))
+        //     print("Method: previous symbol=" + this.lastSymbol.name);
+        
+        function addScope(match, methodName)
+        {
+            if (_this.lastSymbol)
+                methodName= _this.lastSymbol.alias + "#" + methodName;
+            var tag= "@name "+methodName + "\n@function\n@description";
+            print("Replacing: \""+match+"\" with \""+tag+"\"");
+            return tag;
+        }
+        src= src.replace(/@method\s+(\S+)/, addScope);
 
         var indent = "";
         var indentLen = 0;
@@ -136,6 +151,7 @@ JSDOC.PluginManager.registerPlugin("DistilPlugin", {
                 tag.desc= tag.nibbleType(tag.desc);
                 tag.desc= tag.nibbleName(tag.desc);
                 break;
+                
         }
     }
     

@@ -7,7 +7,6 @@ JSDOC.PluginManager.registerPlugin("InterfacePlugin", {
             return;
         if (symbol.comment.getTag("interface").length)
             symbol.isInterface= true;
-        symbol.implementedInterfaces= symbol.comment.getTag("implements");
     },
     
     onDocCommentTags: function(comment)
@@ -28,6 +27,9 @@ JSDOC.PluginManager.registerPlugin("InterfacePlugin", {
         switch (tag.title)
         {
             case 'interface':
+                tag.desc= tag.nibbleName(tag.desc);
+                break;
+            case 'implements':
                 tag.desc= tag.nibbleName(tag.desc);
                 break;
         }

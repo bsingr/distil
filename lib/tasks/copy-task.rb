@@ -1,9 +1,5 @@
 class CopyTask < Task
   
-  def self.task_name
-    "copy"
-  end
-  
   def initialize(target, options)
     super(target, options)
     @files_to_exclude= @options.exclude.to_a

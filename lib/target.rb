@@ -8,23 +8,41 @@ class Target < Configurable
   
   def initialize(name, settings, project)
     super(settings, project)
-    
+
+    @@current= self
     @project= project
     @target_name= name
-    @@current= self
+
+    @warning_count=0
+    @error_count=0
     
     @tasks= []
 
     @extras.each { |task_name, task_settings|
       next if (tasks && !tasks.include?(task_name))
-      t= Task.by_name(task_name)
-      @tasks << t.new(self, task_settings)
-    }
 
-    @warning_count=0
-    @error_count=0
+      if (task_settings.is_a?(Array) || task_settings.is_a?(String))
+        task_settings= { "include"=>task_settings }
+      end
+      
+      t= Task.by_name(task_name)
+      if (!t.nil?)
+        @tasks << t.new(self, task_settings)
+        next
+      end
+      
+      t= Task.by_product_name(task_name)
+      if (!t.nil?)
+        task_settings["output_name"]= task_name[/(.*)\.#{t.output_type}$/,1]
+        @tasks << t.new(self, task_settings)
+        next
+      end
+
+      error("Unknown task: #{task_name}")
+    }
   end
 
+  @@current=nil
   def self.current
     @@current
   end
@@ -56,18 +74,6 @@ class Target < Configurable
     products
   end
   
-  def find_file(file)
-    external_projects.each { |project|
-      path= File.expand_path(File.join(project["include"], file))
-      if (File.exists?(path))
-        source_file= SourceFile.from_path(path)
-        source_file.file_path= file
-        return source_file
-      end
-    }
-    nil
-  end
-
   def process_files
     @tasks.each { |t|
       t.find_files

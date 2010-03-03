@@ -21,6 +21,8 @@ class MultipleOutputTask < OutputTask
     
     # @options.output_folder= prefix
     FileUtils.mkdir_p(output_folder)
+
+    @concatenation_join_string= ""
     
     @prefix= prefix
     @concat= Hash.new
@@ -34,11 +36,11 @@ class MultipleOutputTask < OutputTask
     
     type= output_extension
     @included_files.each { |file|
-      basename= file.basename(".#{type}")
-      name_concat= "#{@prefix}#{basename}-uncompressed.#{type}"
-      name_min= "#{@prefix}#{basename}.#{type}"
-      name_gz= "#{@prefix}#{basename}.#{type}.gz"
-      name_debug= "#{@prefix}#{basename}-debug.#{type}"
+      basename= file.basename("#{type}")
+      name_concat= "#{@prefix}#{basename}-uncompressed#{type}"
+      name_min= "#{@prefix}#{basename}#{type}"
+      name_gz= "#{@prefix}#{basename}#{type}.gz"
+      name_debug= "#{@prefix}#{basename}-debug#{type}"
       @products.concat([name_concat, name_min, name_gz, name_debug])
     }
     @products
@@ -48,18 +50,22 @@ class MultipleOutputTask < OutputTask
     concat= ""
     debug= ""
 
-    destination= File.expand_path(remove_prefix||"")
-    
     file.dependencies.each { |depend|
       next if !@files_to_include.include?(depend)
       next if @files_to_exclude.include?(depend)
       
-      concat << depend.content_relative_to_destination(destination)
-      debug << depend.debug_content_relative_to_destination(destination)
+      concat << depend.filtered_content(options)
+      if (!concat.empty?)
+        concat << @concatenation_join_string||""
+      end
+      debug << depend.debug_content(options)
     }
     
-    concat << file.content_relative_to_destination(destination)
-    debug << file.debug_content_relative_to_destination(destination)
+    if (!concat.empty?)
+      concat << @concatenation_join_string||""
+    end
+    concat << file.filtered_content(options)
+    debug << file.debug_content(options)
     
     @concat[file]= concat
     @debug[file]= debug
@@ -75,11 +81,11 @@ class MultipleOutputTask < OutputTask
     type= output_extension
     return if (!type)
 
-    basename= file.basename(".#{type}")
-    name_concat= "#{@prefix}#{basename}-uncompressed.#{type}"
-    name_min= "#{@prefix}#{basename}.#{type}"
-    name_gz= "#{@prefix}#{basename}.#{type}.gz"
-    name_debug= "#{@prefix}#{basename}-debug.#{type}"
+    basename= file.basename("#{type}")
+    name_concat= "#{@prefix}#{basename}-uncompressed#{type}"
+    name_min= "#{@prefix}#{basename}#{type}"
+    name_gz= "#{@prefix}#{basename}#{type}.gz"
+    name_debug= "#{@prefix}#{basename}-debug#{type}"
     
     # puts "Finish: #{file}"
     # puts "  #{name_concat}"

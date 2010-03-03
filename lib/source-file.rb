@@ -9,21 +9,12 @@ class SourceFile
     @full_path= File.expand_path(filepath)
 
     @parent_folder= File.dirname(@full_path)
-    @dependencies= Array.new
-    @assets= Array.new
+    @dependencies= []
+    @assets= []
     
     @@file_cache[@full_path]= self
   end
 
-  @@root_folder= FileUtils.pwd
-  def self.root_folder
-    @@root_folder
-  end
-  
-  def self.root_folder=(new_root_folder)
-    @@root_folder= File.expand_path(new_root_folder)
-  end
-  
   def self.extension
   end
   
@@ -31,16 +22,23 @@ class SourceFile
     self.class.extension
   end
   
-  def can_embed_as_content
+  def can_embed_as_content(file)
     false
   end
   
-  def minify_content_type
+  def content_type
+    ext= self.extension
+    return if !ext
+    ext[1..-1]
   end
   
   @@file_types= []
   def self.inherited(subclass)
     @@file_types << subclass
+  end
+
+  def self.file_types
+    @@file_types
   end
 
   @@file_cache= Hash.new
@@ -81,45 +79,56 @@ class SourceFile
   end
   
   def file_path
-    @file_path || self.relative_to_folder(@@root_folder)
+    @file_path
   end
 
   def file_path=(path)
     @file_path=path
   end
   
-  def has_file_path
-    @file_path
+  def load_content
+    content= File.read(@full_path)
+    Filter.each { |f|
+      next if !f.handles_file(self)
+      content= f.preprocess_content(self, content)
+    }
+    content
+  end
+
+  def escape_embeded_content(content)
+    content
   end
   
   def content
-    @content ||= File.read(@full_path)
+    @content ||= load_content
   end
 
-  def content_relative_to_destination(destination)
-    content.gsub(/\{\{FILEREF\(([^)]*)\)\}\}/) { |match|
-      file= SourceFile.from_path($1)
-      file.relative_to_folder(destination)
+  def filtered_content(options)
+    c= content || ""
+    Filter.each { |f|
+      next if !f.handles_file(self)
+      c= f.filter_content(self, c, options)
     }
+    c
   end
-
-  def debug_content_relative_to_destination(destination)
-    self.content_relative_to_destination(destination)
+    
+  def debug_content(options)
+    self.filtered_content(options)
   end
   
   def minify_content(source)
   	# Run the Y!UI Compressor
-    return source if !minify_content_type
+    return source if !content_type
   	buffer= ""
     
-  	IO.popen("java -jar #{$compressor} --type #{minify_content_type}", "r+") { |pipe|
+  	IO.popen("java -jar #{$compressor} --type #{content_type}", "r+") { |pipe|
   	  pipe.puts(source)
   	  pipe.close_write
   	  buffer= pipe.read
 	  }
 	  
     # buffer = `java -jar #{$compressor} --type #{type} #{working_file}`
-  	if ('css'==minify_content_type)
+  	if ('css'==content_type)
   		# puts each rule on its own line, and deletes @import statements
   		return buffer.gsub(/\}/,"}\n").gsub(/.*@import url\(\".*\"\);/,'')
   	else
@@ -154,19 +163,26 @@ class SourceFile
   end
   
   def dependencies
-    # make certain the content is loaded
-    self.content
+    content
     @dependencies
   end
 
+  def add_dependency(file)
+    return if @dependencies.include?(file)
+    @dependencies << file
+  end
+  
   def assets
-    # make certain the content is loaded
-    self.content
+    content
     @assets
   end
   
-  def copy_to(folder)
-    file_path= self.file_path
+  def add_asset(file)
+    @assets << file
+  end
+  
+  def copy_to(folder, prefix)
+    file_path= self.file_path || relative_to_folder(prefix||"")
     final_target_folder= File.join(folder, File.dirname(file_path))
     FileUtils.mkdir_p final_target_folder
     FileUtils.cp self.full_path, final_target_folder

@@ -406,7 +406,7 @@ JSDOC.Walker.prototype.step = function() {
 				
 				name = "$anonymous";
 				name = this.namescope.last().alias+"-"+name
-				
+
 				params = JSDOC.Walker.onParamList(this.ts.balance("LEFT_PAREN"));
 				
 				symbol = new JSDOC.Symbol(name, params, "FUNCTION", doc);

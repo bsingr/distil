@@ -4,8 +4,8 @@ class HtmlFile < SourceFile
     ".html"
   end
 
-  def can_embed_as_content
-    true
+  def minify_content(source)
+    source.gsub(/>\s+</, "><")
   end
-
+  
 end

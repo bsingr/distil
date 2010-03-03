@@ -189,10 +189,6 @@ class TestTask < Task
     @skipped= 0
   end
 
-  def self.task_name
-    "test"
-  end
-
   def handles_file?(file_name)
     "#{file_name}"[/\.js$/] || "#{file_name}"[/\.html$/]
   end
@@ -275,6 +271,10 @@ class TestTask < Task
     
     @server.unmount "/unittest"
     @server.shutdown
+  end
+  
+  def need_to_build
+    true
   end
   
 end
