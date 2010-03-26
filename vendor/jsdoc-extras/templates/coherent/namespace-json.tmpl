@@ -1,0 +1,20 @@
+<if test="data.node">
+{
+    name: "{+data.node.name+}",
+    link: "{+data.node.linkHref+}"
+    <if test="data.node.symbols && data.node.symbols.length">
+    symbols: [
+        <for each="symbol" in="data.node.symbols">
+            {+publishJsonSymbol(data, symbol)+},
+        </for>
+    ],
+    </if>
+    <if test="data.node.namespaces && data.node.namespaces.length">
+    namespaces: [
+        <for each="namespace" in="data.node.namespaces">
+            {+publishJsonSymbol(data, namespace)+},
+        </for>
+    ]
+    </if>
+}
+</if>

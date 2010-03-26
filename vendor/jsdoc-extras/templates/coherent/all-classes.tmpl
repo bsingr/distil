@@ -1,0 +1,16 @@
+{+data.node.link+}
+    <if test="data.node.namespaces && data.node.namespaces.length">
+    <ul class="namespaces">
+        <for each="namespace" in="data.node.namespaces">
+            <li>{+publishClassListNamespace(data, namespace)+}</li>
+        </for>
+    </ul>
+    </if>
+
+    <if test="data.node.symbols && data.node.symbols.length">
+    <ul class="classes">
+        <for each="symbol" in="data.node.symbols">
+            <li>{+symbol.link+}</li>
+        </for>
+    </ul>
+    </if>

@@ -8,7 +8,8 @@ class Task < Configurable
   attr_reader :included_files, :assets
 
   option :remove_prefix
-
+  option_alias :remove_prefix, :source_folder
+  
   def initialize(target, settings)
     super(settings, target)
     
@@ -30,6 +31,11 @@ class Task < Configurable
     @@tasks
   end
 
+  @@task_aliases= Hash.new
+  def self.task_name_alias(name)
+    @@task_aliases[name]= self
+  end
+  
   @@task_index= nil
   def self.task_index
     return @@task_index if @@task_index
@@ -42,7 +48,7 @@ class Task < Configurable
   end
   
   def self.by_name(taskname)
-    self.task_index[taskname]
+    self.task_index[taskname] || @@task_aliases[taskname]
   end
   
   def self.by_product_name(productname)
@@ -184,6 +190,8 @@ class Task < Configurable
   end
   
   def build_assets
+    FileUtils.mkdir_p(output_folder)
+
     if ("release"==mode)
       copy_assets
     else

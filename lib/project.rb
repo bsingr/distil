@@ -118,7 +118,7 @@ class Project < Configurable
     # build or get each project
     projects.each { |project|
       
-      if (project.key?("folder") && !File.directory?(project["folder"]))
+      if (project.key?("folder") && !File.directory?(project["folder"]) && !File.symlink?(project["folder"]))
         if (project["url"])
           url= project["url"]
           system "svn co #{url} #{project["folder"]}"

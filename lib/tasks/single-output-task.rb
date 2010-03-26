@@ -35,14 +35,16 @@ class SingleOutputTask < OutputTask
     @debug = ""
   end
 
+  def process_file(file)
+    if (!@concat.empty?)
+      @concat << @concatenation_join_string||""
+    end
+    @concat << file.filtered_content(options)
+    @debug << file.debug_content(options)
+  end
+  
   def process_files
-    @included_files.each { |f|
-      if (!@concat.empty?)
-        @concat << @concatenation_join_string||""
-      end
-      @concat << f.filtered_content(options)
-      @debug << f.debug_content(options)
-    }
+    @included_files.each { |f| process_file(f) }
   end
 
   def finish

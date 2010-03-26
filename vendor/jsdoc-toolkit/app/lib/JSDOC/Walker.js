@@ -182,6 +182,15 @@ JSDOC.Walker.prototype.step = function() {
 			}
 			// foo = function() {}
 			else if (this.ts.look(1).is("ASSIGN") && this.ts.look(2).is("FUNCTION")) {
+				var constructs;
+				var isConstructor = false;
+				if (doc && (constructs = doc.getTag("constructs")) && constructs.length) {
+					if (constructs[0].desc) {
+						name = constructs[0].desc;
+						isConstructor = true;
+					}
+				}
+					
 				var isInner;
 				if (this.ts.look(-1).is("VAR") || this.isInner) {
 					if (doc && doc.getTag("memberOf").length > 0) {
@@ -204,6 +213,7 @@ JSDOC.Walker.prototype.step = function() {
 				symbol = new JSDOC.Symbol(name, params, "FUNCTION", doc);
 
 				if (isInner) symbol.isInner = true;
+				if (isConstructor) symbol.isa = "CONSTRUCTOR";
 				
 				if (this.ts.look(1).is("JSDOC")) {
 					var inlineReturn = ""+this.ts.look(1).data;
@@ -260,8 +270,6 @@ JSDOC.Walker.prototype.step = function() {
 				if (this.lastDoc) doc = this.lastDoc;
 				params = JSDOC.Walker.onParamList(this.ts.balance("LEFT_PAREN"));
 				
-				if (/(^|#)constructor$/.test(name)) JSDOC.PluginManager.run("onConstructorDefined", doc);
-				                   
 				if (doc && doc.getTag("constructs").length) {
 					name = name.replace(/\.prototype(\.|$)/, "#");
 					

@@ -94,8 +94,6 @@ JSDOC.JsPlate.prototype.process = function(data, compact) {
 		if (e.lineNumber-2 >= 0) print("line "+(e.lineNumber-1)+": "+lines[e.lineNumber-2]);
 		print("line "+e.lineNumber+": "+lines[e.lineNumber-1]);
 		print("");
-		
-		print(this.code);
 	}
 	
 	if (compact) { // patch by mcbain.asm

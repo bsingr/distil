@@ -14,14 +14,13 @@ class JavascriptTask < SingleOutputTask
   option :jsdoc_plugins, "#{$vendor_dir}/jsdoc-extras/plugins"
   option :doc_folder, "doc"
   option :generate_docs, false
+  option :generate_import, false
   option :class_list, ""
   option :class_list_template, "#{$vendor_dir}/jsdoc-extras/templates/classlist"
 
   output_type "js"
   
-  def self.task_name
-    "js"
-  end
+  task_name_alias "js"
   
   def initialize(target, options)
     super(target, options)
@@ -33,6 +32,27 @@ class JavascriptTask < SingleOutputTask
     
     if (generate_docs)
       @products << File.join(doc_folder, "index.html")
+    end
+    
+    type= output_extension
+    return if (!type)
+
+    if (!output_name.empty?)
+      target_name= "#{output_name}"
+      prefix= "#{output_folder}/"
+    else
+      target_name= "#{target.target_name}".downcase
+      prefix= "#{output_folder}/#{project_name}"
+      if ("all"==target_name)
+        target_name= ""
+      else
+        prefix= "#{prefix}-"
+      end
+    end
+
+    if (generate_import)
+      @name_import= "#{prefix}#{target_name}-import#{type}"
+      @products << @name_import
     end
   end
   
@@ -62,6 +82,7 @@ class JavascriptTask < SingleOutputTask
     }
     
     @included_files.each { |f|
+      next if "js"!=f.content_type
       tmp << "+process #{f}\n"
     }
 
@@ -172,6 +193,21 @@ class JavascriptTask < SingleOutputTask
     @debug= replace_tokens(template, {
               "LOAD_SCRIPTS" => @debug
             })
+  end
+
+  def finish
+    super
+    return if (!generate_import)
+
+    File.delete(@name_import) if (File.exists?(@name_import))
+    
+    File.open(@name_import, "w") { |f|
+      f.write(notice_text)
+      
+      @included_files.each { |inc|
+        f.puts "/*jsl:import #{inc.relative_to_folder(output_folder)}*/"
+      }
+    }
   end
   
 end

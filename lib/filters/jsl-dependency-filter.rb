@@ -25,7 +25,7 @@ class JslDependencyFilter < Filter
         else
           dependency= Project.current.find_file($1)
           if (dependency)
-            file.add_dependency SourceFile.from_path(import_file)
+            file.add_dependency dependency
           else
             file.error "Missing import file: #{$1}", line_num
           end

@@ -26,7 +26,7 @@ class FileSet
     end
 
     files= Dir.glob(full_path)
-    if (files.length)
+    if (files.length>0)
       files.each { |f|
         source_file= SourceFile.from_path(f)
         next if (@files.include?(source_file))

@@ -1,0 +1,7 @@
+function classIndex()
+{
+    {!
+        var aliases= data.map(function(c) { return '"' + c.alias + '"'; });
+    !}
+    return [{+aliases.join(',')+}];
+}
