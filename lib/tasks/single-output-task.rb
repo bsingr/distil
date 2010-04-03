@@ -47,6 +47,14 @@ class SingleOutputTask < OutputTask
     @included_files.each { |f| process_file(f) }
   end
 
+  def uncompressed_preamble
+    ""
+  end
+  
+  def uncompressed_postscript
+    ""
+  end
+  
   def finish
     return if (!output_type)
     
@@ -66,7 +74,9 @@ class SingleOutputTask < OutputTask
     
     File.open(@name_concat, "w") { |f|
       f.write(notice_text)
+      f.write(uncompressed_preamble)
       f.write(concat)
+      f.write(uncompressed_postscript)
     }
     
     minified= minify(concat)

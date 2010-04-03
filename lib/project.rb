@@ -155,7 +155,7 @@ class Project < Configurable
            value.is_a?(Hash) && value.has_key?("enabled") && !value["enabled"])
 
       puts
-      puts "#{project_name} #{section}:"
+      puts "#{project_name}/#{section}:"
       puts
 
       task= Task.by_name(section) || Task.by_product_name(section)

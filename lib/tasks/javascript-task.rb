@@ -14,7 +14,6 @@ class JavascriptTask < SingleOutputTask
   option :jsdoc_plugins, "#{$vendor_dir}/jsdoc-extras/plugins"
   option :doc_folder, "doc"
   option :generate_docs, false
-  option :generate_import, false
   option :class_list, ""
   option :class_list_template, "#{$vendor_dir}/jsdoc-extras/templates/classlist"
 
@@ -50,10 +49,6 @@ class JavascriptTask < SingleOutputTask
       end
     end
 
-    if (generate_import)
-      @name_import= "#{prefix}#{target_name}-import#{type}"
-      @products << @name_import
-    end
   end
   
   # JsTask handles files that end in .js
@@ -193,21 +188,19 @@ class JavascriptTask < SingleOutputTask
     @debug= replace_tokens(template, {
               "LOAD_SCRIPTS" => @debug
             })
-  end
 
-  def finish
-    super
-    return if (!generate_import)
-
-    File.delete(@name_import) if (File.exists?(@name_import))
-    
-    File.open(@name_import, "w") { |f|
-      f.write(notice_text)
-      
-      @included_files.each { |inc|
-        f.puts "/*jsl:import #{inc.relative_to_folder(output_folder)}*/"
-      }
+    destination=File.expand_path(remove_prefix||"")
+    @included_files.each { |inc|
+        @debug << "/*jsl:import #{inc.relative_to_folder(destination)}*/\n"
     }
   end
+
+  def uncompressed_preamble
+    "/**#nocode+*/\n\n"
+  end
   
+  def uncompressed_postscript
+    "\n\n/**#nocode-*/"
+  end
+
 end
