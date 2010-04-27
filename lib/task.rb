@@ -9,6 +9,7 @@ class Task < Configurable
 
   option :remove_prefix
   option_alias :remove_prefix, :source_folder
+  option :validate, true
   
   def initialize(target, settings)
     super(settings, target)

@@ -58,7 +58,7 @@ class JavascriptTask < SingleOutputTask
 
   def validate_files
 
-    return if (!File.exists?($lint_command))
+    return if (!validate || !File.exists?($lint_command))
         
     tmp= Tempfile.new("jsl.conf")
     

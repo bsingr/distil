@@ -72,8 +72,8 @@ function publish(symbolSet) {
 
 	var summary= generateJsonSummary(symbols);
 	
-    // publish.classesIndex = classesTemplate.process(classes); // kept in memory
- 	publish.classesIndex = publishClassListSummary(summary); // kept in memory
+    publish.classesIndex = classesTemplate.process(classes); // kept in memory
+    // publish.classesIndex = publishClassListSummary(summary); // kept in memory
 	
 	var classesJson= publishJsonSummary(summary);
 	IO.saveFile(publish.conf.outDir, "all-classes.json", classesJson);
