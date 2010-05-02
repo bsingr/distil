@@ -89,9 +89,14 @@ LDFLAGS += -lm
 endif
 
 # Prevent floating point errors caused by VC++ optimizations
-ifeq ($(OS_ARCH),WINNT)
-CFLAGS += /Op
-endif # WINNT
+ifdef USE_MSVC
+_MSC_VER = $(shell $(CC) 2>&1 | sed -n 's/.*Compiler Version \([0-9]*\)\.\([0-9]*\).*/\1\2/p')
+ifeq (,$(filter-out 1200 1300 1310,$(_MSC_VER)))
+CFLAGS += -Op
+else
+CFLAGS += -fp:precise
+endif
+endif # USE_MSVC
 
 #
 # Ask perl what flags it was built with, so we can build js with similar flags
@@ -332,10 +337,14 @@ endif
 # special rule for jsmath.o since we want to incrementally link
 # against fdlibm to pull in only what is needed
 $(OBJDIR)/jsmath.o: jsmath.c jsmath.h jslibmath.h $(FDLIBM_LIBRARY)
-ifneq (,$(filter OS2 WINNT,$(OS_ARCH)))
-	$(CC) -Fo$(JSMATH_PRELINK) -c $(CFLAGS) $<
+ifeq ($(OS_ARCH),OS2)
+  $(CC) -Fo$(JSMATH_PRELINK) -c $(CFLAGS) $<
+else
+ifdef USE_MSVC
+  $(CC) -Fo$(JSMATH_PRELINK) -c $(CFLAGS) $<
 else
 	$(CC) -o $(JSMATH_PRELINK) -c $(CFLAGS) $<
+endif
 endif
 
 ifeq ($(OS_ARCH),QNX)
@@ -345,11 +354,12 @@ else
 	$(LD) $(DASH_R) -o $@ $(JSMATH_PRELINK) $(FDLIBM_LIBRARY)
 endif
 else
-ifdef USE_MSVC
+ifeq ($(OS_ARCH),WINNT)
 	@echo Warning: to use $(LIBRARY) must also link against $(FDLIBM_LIBRARY)
 	@cp $(JSMATH_PRELINK) $@
-endif
+else
 	$(LD) $(DASH_R) -o $@ $(JSMATH_PRELINK) $(FDLIBM_LIBRARY)
+endif
 endif
 
 # Note: generated headers must be built before descending

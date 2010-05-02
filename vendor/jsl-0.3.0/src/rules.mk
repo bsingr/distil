@@ -58,7 +58,8 @@ ifdef USE_MSVC
 # TARGETS = $(LIBRARY)   # $(PROGRAM) not supported for MSVC yet
 TARGETS += $(SHARED_LIBRARY) $(PROGRAM)  # it is now
 else
-TARGETS += $(LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) 
+# TARGETS += $(LIBRARY) $(SHARED_LIBRARY) $(PROGRAM) 
+TARGETS += $(LIBRARY) $(PROGRAM) 
 endif
 
 all:

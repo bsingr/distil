@@ -1,0 +1,26 @@
+Project structure:
+
+  MyFramework
+    MyFramework.proj
+    MyFramework.tmproj
+    build/
+      debug/
+        MyFramework.css
+        MyFramework.css.gz
+        MyFramework-debug.css
+        MyFramework-uncompressed.css
+        MyFramework.js
+        MyFramework.js.gz
+        MyFramework-debug.js
+        MyFramework-uncompressed.js
+        frameworks/
+          SubFramework => symlink
+          AnotherFramework => symlink
+        resources/
+          ...
+        src => symlink to ../../src
+    src/
+      css/
+        ...
+      js/
+        ...

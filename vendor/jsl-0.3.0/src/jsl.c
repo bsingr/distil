@@ -63,11 +63,13 @@
 #include "jsscript.h"
 #include "jsstr.h"
 
-#ifdef XP_UNIX
+#if defined(XP_UNIX) || defined(_MINGW)
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
+#ifndef _MINGW
 #include <sys/wait.h>
+#endif
 #include <sys/stat.h>
 #endif
 
@@ -180,6 +182,12 @@ typedef struct JSLPathList {
     char path[MAXPATHLEN+1];
 } JSLPathList;
 
+typedef struct JSLAliasList {
+    JSCList links;
+    char path[MAXPATHLEN+1];
+    char alias[MAXPATHLEN+1];
+} JSLAliasList;
+
 typedef struct JSLScriptList {
     JSCList links;
 
@@ -189,6 +197,7 @@ typedef struct JSLScriptList {
 } JSLScriptList;
 
 JSLScriptList gScriptList;
+JSLAliasList gScriptAliasList;
 JSLPathList gIncludePathList;
 
 
@@ -305,8 +314,9 @@ IsDir(char *filename)
 
 
 
-#ifdef WIN32
+#if defined(WIN32)
 
+#ifndef _MINGW
 struct dirent {
     char d_name[MAXPATHLEN];
 };
@@ -371,6 +381,7 @@ closedir(DIR *dir)
     }
     return 0;
 }
+#endif
 
 /* caller should allocate MAXPATHLEN; does not set errno; returns null on failure */
 static char *
@@ -603,6 +614,36 @@ OutputErrorMessage(const char *path, int lineno, int colno, const char *errName,
     }
 }
 
+static JSLAliasList*
+AllocAliasListItem(const char *alias, const char *path)
+{
+    JSLAliasList *aliasItem= malloc(sizeof(JSLAliasList));
+    memset(aliasItem, 0, sizeof(JSLAliasList));
+    
+    JS_INIT_CLIST(&aliasItem->links);
+    strncpy(aliasItem->path, path, MAXPATHLEN);
+    strncpy(aliasItem->alias, alias, MAXPATHLEN);
+    
+    return aliasItem;
+}
+
+static void
+AddAliasToList(JSLAliasList *aliasList, const char *alias, const char *path)
+{
+    JSLAliasList *aliasItem= AllocAliasListItem(alias, path);
+    JS_APPEND_LINK(&aliasItem->links, &aliasList->links);
+}
+
+static void
+FreeAliasList(JSContext *cx, JSLAliasList *aliasList)
+{
+    while (!JS_CLIST_IS_EMPTY(&aliasList->links)) {
+        JSLAliasList *item = (JSLAliasList*)JS_LIST_HEAD(&aliasList->links);
+        JS_REMOVE_LINK(&item->links);
+        JS_free(cx, item);
+    }
+}
+
 static JSLPathList*
 AllocPathListItem(const char *path)
 {
@@ -804,6 +845,7 @@ ResolveScriptPath(const char *relpath, char *path, JSLScriptList *parentScript)
     JSBool result;
     struct stat _stat;
     JSLPathList *inc;
+    JSLAliasList *alias;
     
     char workingDir[MAXPATHLEN+1];
     workingDir[0] = 0;
@@ -832,6 +874,22 @@ ResolveScriptPath(const char *relpath, char *path, JSLScriptList *parentScript)
     if (result && -1!=stat(path, &_stat))
         return JS_TRUE;
 
+    //  Check for an alias match. Aliased files still must exist or the search
+    //  will continue.
+    for (alias= (JSLAliasList*)JS_LIST_HEAD(&gScriptAliasList.links);
+         alias!=&gScriptAliasList;
+         alias= (JSLAliasList*)JS_NEXT_LINK(&alias->links))
+    {
+        if (0==strcmp(relpath, alias->alias))
+        {
+            if (-1==stat(alias->path, &_stat))
+                continue;
+            strcpy(path, alias->path);
+            return JS_TRUE;
+        }
+    }
+
+    //  Nothing matches, so look in include folders...
     for (inc= (JSLPathList*)JS_LIST_HEAD(&gIncludePathList.links);
          inc!=&gIncludePathList;
          inc= (JSLPathList*)JS_NEXT_LINK(&inc->links))
@@ -1800,19 +1858,71 @@ ProcessSettingErr_Garbage:
                 *linepos = 0;
 
                 AddPathToList(&gIncludePathList, path);
-/*
-                if (JS_FALSE) {
-ProcessSettingErr_MissingPath:
+            }
+            else if (strncasecmp(linepos, "alias", strlen("alias")) == 0) {
+                char delimiter;
+                char *path;
+                char *alias;
+                
+                if (!enable) {
                     fclose(file);
-                    return LintConfError(cx, path, lineno, "invalid include setting: missing path");
-ProcessSettingErr_MissingQuote:
-                    fclose(file);
-                    return LintConfError(cx, path, lineno, "invalid include setting: missing or mismatched quote");
-ProcessSettingErr_Garbage:
-                    fclose(file);
-                    return LintConfError(cx, path, lineno, "invalid include setting: garbage after path");
+                    return LintConfError(cx, path, lineno, "-alias is an invalid setting");
                 }
-*/
+
+                linepos += strlen("alias");
+
+                /* require (but skip) whitespace */
+                if (!*linepos || !isspace(*linepos)) goto ProcessSettingErr_MissingPath;
+                while (*linepos && isspace(*linepos))
+                    linepos++;
+                if (!*linepos) goto ProcessSettingErr_MissingPath;
+
+                /* allow quote */
+                if (*linepos == '\'') {
+                    delimiter = *linepos;
+                    linepos++;
+                }
+                else if (*linepos == '"') {
+                    delimiter = *linepos;
+                    linepos++;
+                }
+                else
+                    delimiter = 0;
+
+                /* read alias */
+                if (!*linepos) goto ProcessSettingErr_MissingQuote;
+                alias = linepos;
+                while (*linepos)
+                {
+                    if (delimiter && *linepos==delimiter)
+                        break;
+                    if (!delimiter && isspace(*linepos))
+                        break;
+                    linepos++;
+                }
+                if (delimiter && *linepos!=delimiter) goto ProcessSettingErr_MissingQuote;
+                if (!delimiter && !isspace(*linepos)) goto ProcessSettingErr_MissingPath;
+
+                /* terminate path */
+                *linepos++= 0;
+                
+                /* require (but skip) whitespace */
+                while (*linepos && isspace(*linepos))
+                    linepos++;
+                if (!*linepos) goto ProcessSettingErr_MissingPath;
+
+                /* read path */
+                if (!*linepos) goto ProcessSettingErr_MissingQuote;
+                path = linepos;
+                while (*linepos && *linepos != delimiter)
+                    linepos++;
+                if (delimiter && !*linepos) goto ProcessSettingErr_MissingQuote;
+
+                /* yank ending quote */
+                if (linepos[0] && linepos[1]) goto ProcessSettingErr_Garbage;
+                *linepos = 0;
+
+                AddAliasToList(&gScriptAliasList, alias, path);
             }
             else if (strncasecmp(linepos, "output-format", strlen("output-format")) == 0) {
                 linepos += strlen("output-format");
@@ -2304,6 +2414,7 @@ main(int argc, char **argv, char **envp)
     argv++;
 
     JS_INIT_CLIST(&gScriptList.links);
+    JS_INIT_CLIST(&gScriptAliasList.links);
     JS_INIT_CLIST(&gIncludePathList.links);
     JS_ASSERT(sizeof(placeholders) / sizeof(placeholders[0]) == JSLPlaceholder_Limit);
 

@@ -84,6 +84,11 @@ endif
 ifeq ($(OS_ARCH), CYGWIN32_NT)
 	OS_ARCH    := WINNT
 endif
+ifeq (MINGW32_NT,$(findstring MINGW32_NT,$(OS_ARCH)))
+	OS_RELEASE          := $(patsubst MINGW32_NT-%,%,$(OS_ARCH))
+	OS_ARCH_ENVIRONMENT := MINGW32_NT
+	OS_ARCH             := WINNT
+endif
 
 # Virtually all Linux versions are identical.
 # Any distinctions are handled in linux.h
@@ -96,7 +101,11 @@ else
 ifeq ($(OS_ARCH),Darwin)
 OS_CONFIG      := Darwin
 else
+ifeq ($(OS_ARCH_ENVIRONMENT),MINGW32_NT)
+OS_CONFIG      := MinGW$(OS_RELEASE)
+else
 OS_CONFIG       := $(OS_ARCH)$(OS_OBJTYPE)$(OS_RELEASE)
+endif
 endif
 endif
 endif
@@ -114,7 +123,7 @@ endif
 
 ifdef BUILD_OPT
 OPTIMIZER  = -O
-DEFINES    += -UDEBUG -DNDEBUG -UDEBUG_$(shell whoami)
+DEFINES    += -UDEBUG -DNDEBUG -UDEBUG_$(USER)
 OBJDIR_TAG = _OPT
 else
 ifdef USE_MSVC
@@ -122,11 +131,16 @@ OPTIMIZER  = -Zi
 else
 OPTIMIZER  = -g
 endif
-DEFINES    += -DDEBUG -DDEBUG_$(shell whoami)
+DEFINES    += -DDEBUG -DDEBUG_$(USER)
 OBJDIR_TAG = _DBG
 endif
 
+ifeq ($(OS_ARCH), WINNT)
+SO_SUFFIX = dll
+EXE_DOTSUFFIX = .exe
+else
 SO_SUFFIX = so
+endif
 
 NS_USE_NATIVE = 1
 
@@ -144,6 +158,22 @@ endif
 CLASSPATH    = $(JDK)/lib/classes.zip$(SEP)$(CLASSDIR)/$(OBJDIR)
 
 include $(DEPTH)/config/$(OS_CONFIG).mk
+
+ifndef OBJ_SUFFIX
+ifdef USE_MSVC
+OBJ_SUFFIX = obj
+else
+OBJ_SUFFIX = o
+endif
+endif
+
+ifndef HOST_BIN_SUFFIX
+ifeq ($(OS_ARCH),WINNT)
+HOST_BIN_SUFFIX = .exe
+else
+HOST_BIN_SUFFIX =
+endif
+endif
 
 # Name of the binary code directories
 ifdef BUILD_IDG
