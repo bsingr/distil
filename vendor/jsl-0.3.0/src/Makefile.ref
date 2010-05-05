@@ -333,7 +333,7 @@ endif
 # against fdlibm to pull in only what is needed
 $(OBJDIR)/jsmath.o: jsmath.c jsmath.h jslibmath.h $(FDLIBM_LIBRARY)
 ifneq (,$(filter OS2 WINNT,$(OS_ARCH)))
-	$(CC) -Fo$(JSMATH_PRELINK) -c $(CFLAGS) $<
+  $(CC) -Fo$(JSMATH_PRELINK) -c $(CFLAGS) $<
 else
 	$(CC) -o $(JSMATH_PRELINK) -c $(CFLAGS) $<
 endif

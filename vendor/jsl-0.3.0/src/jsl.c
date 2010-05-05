@@ -1813,7 +1813,7 @@ ProcessSettingErr_Garbage:
                     return LintConfError(cx, path, lineno, "invalid include setting: garbage after path");
                 }
 */
-            }
+                }
             else if (strncasecmp(linepos, "output-format", strlen("output-format")) == 0) {
                 linepos += strlen("output-format");
 
