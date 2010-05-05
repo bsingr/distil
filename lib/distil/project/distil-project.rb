@@ -118,7 +118,7 @@ module Distil
     end
   
     def build_targets
-      puts "\n#{name}\n\n"
+      puts "\n#{name}:\n\n"
       targets.each { |target|
         target.build
       }

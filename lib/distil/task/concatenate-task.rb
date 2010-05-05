@@ -79,10 +79,12 @@ module Distil
 
       File.open(debug_name, "w") { |f|
         f.write(target.notice_text)
+        f.write(content_prefix)
         debug_files.each { |file|
           f.write("\n")
           f.write(target.get_debug_reference_for_file(file))
         }
+        f.write(content_suffix)
       }
       
       return if !minify && !compress

@@ -2,7 +2,7 @@ module Distil
   
   FRAMEWORK_TYPE = "framework"
   APP_TYPE = "application"
-
+  
   WEAK_LINKAGE = 'weak'
   INCLUDE_LINKAGE = 'include'
   LAZY_LINKAGE = 'lazy'
@@ -19,7 +19,7 @@ module Distil
     option :path, String
     option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
     option :source_folder, ProjectPath, "", :aliases=>['source']
-    option :type, String, FRAMEWORK_TYPE
+    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type']
     option :linkage, WEAK_LINKAGE
 
     option :import_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['import']

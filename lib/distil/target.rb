@@ -124,8 +124,6 @@ module Distil
       
       folders.each { |f|
         src_folder= File.join(source_folder, f)
-        # src_folder= SourceFile.path_relative_to_folder(src_folder, project.output_folder)
-      
         target_folder= File.join(project.output_folder, f)
         
         next if File.exists?(target_folder)
