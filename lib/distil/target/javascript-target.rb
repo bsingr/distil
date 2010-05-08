@@ -17,7 +17,7 @@ module Distil
 
       if (bootstrap)
         @options.content_prefix= "#{File.read(bootstrap_source)}\n\n/**#nocode+*/\n\n"
-        @options.content_suffix= "\n\n/**#nocode-*/"
+        @options.content_suffix= "\n\ndistil.kick();\n\n/**#nocode-*/"
       else
         @options.content_prefix= "/**#nocode+*/\n\n"
         @options.content_suffix= "\n\n/**#nocode-*/"
@@ -29,7 +29,7 @@ module Distil
       output_folder= project.output_folder
       path=file.relative_to_folder(source_folder) if 0==file_path.index(source_folder)
       path=file.relative_to_folder(output_folder) if 0==file_path.index(output_folder)
-      "/*jsl:import #{path}*/\ndistil.queue(\"#{path}\");" 
+      "/*jsl:import #{path}*/\ndistil.queue(distil.SCRIPT_TYPE, \"#{path}\");" 
     end
     
     # Javascript targets handle files that end in .js

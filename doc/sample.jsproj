@@ -5,7 +5,7 @@ version: 3.0.0
 notice: src/NOTICE
 output: build/$(mode)
 mode: debug
-
+  
 use:
   - name: coherent
     path: /Users/jeff/Projects/coherent

@@ -24,3 +24,18 @@ Project structure:
         ...
       js/
         ...
+      resources/
+        foo.jsnib
+        de/
+          foo.html
+          strings.json
+        en/
+          foo.html
+          strings.json
+        es/
+          foo.html
+          strings.json
+        es_US/
+          foo.html
+          strings.json
+

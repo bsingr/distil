@@ -12,6 +12,7 @@ module Distil
     option :generate_docs, false
     option :product_extension
     option :notice_file, ProjectPath, "$(source_folder)/NOTICE", :aliases=>['notice']
+    option :force, false
     
     def initialize(settings, project)
       if settings.is_a?(Array)
@@ -147,7 +148,8 @@ module Distil
     
     def need_to_build
       return @need_to_build if !@need_to_build.nil?
-
+      return true if force
+      
       product_mtimes= products.map { |p|
         p=File.expand_path(p)
         return (@need_to_build=true) if !File.exists?(p)
