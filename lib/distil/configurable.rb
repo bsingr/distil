@@ -8,6 +8,8 @@ module Kernel
 
 end
 
+class ValidationError < StandardError
+end
 
 
 class Configurable
@@ -50,6 +52,10 @@ class Configurable
       # decide if any type conversions are needed...
       setting_value= convert_type(value[:type], setting_value)
     
+      if (value.has_key?(:valid_values) && !value[:valid_values].include?(setting_value))
+        raise ValidationError, "Invalid value for '#{setting_key}': #{setting_value}"
+      end
+        
       s[key]= setting_value
 
     }

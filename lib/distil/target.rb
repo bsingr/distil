@@ -3,7 +3,7 @@ module Distil
   class Target < Configurable
     include ErrorReporter
     
-    class_attr :config_key
+    class_attr :config_key, :sort_order
     attr_accessor :assets, :files, :products, :project
     
     option :include_files, FileSet, :aliases=>['include']
@@ -27,6 +27,7 @@ module Distil
       @probed= Set.new
       @contents= {}
       @files= []
+      @products= []
       
       super(settings, project)
     end
@@ -68,6 +69,7 @@ module Distil
       @assets.merge(file.assets)
       @assets << file
       @files << file
+      
     end
 
     def find_files
@@ -150,7 +152,7 @@ module Distil
       return @need_to_build if !@need_to_build.nil?
       return true if force
       
-      product_mtimes= products.map { |p|
+      product_mtimes= @products.map { |p|
         p=File.expand_path(p)
         return (@need_to_build=true) if !File.exists?(p)
         File.stat(p).mtime
@@ -167,7 +169,7 @@ module Distil
     def build
       find_files
       collect_products
-      
+
       return if !need_to_build
       
       validate_files

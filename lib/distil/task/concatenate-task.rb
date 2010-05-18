@@ -53,7 +53,7 @@ module Distil
       debug_files= []
       
       target.project.external_projects.each { |project|
-        next if INCLUDE_LINKAGE!=project.linkage
+        next if STRONG_LINKAGE!=project.linkage
         
         concat_file= Interpolated.value_of(project.concatenated_name, self)
         debug_file= Interpolated.value_of(project.import_name, self)
@@ -70,8 +70,8 @@ module Distil
       File.open(concatenated_name, "w") { |f|
         f.write(target.notice_text)
         f.write(content_prefix)
-        concat_files.each_with_index { |file, i|
-          f.write(join_string) if i>0
+        concat_files.each { |file|
+          f.write(join_string)
           f.write(target.get_content_for_file(file))
         }
         f.write(content_suffix)
@@ -80,6 +80,7 @@ module Distil
       File.open(debug_name, "w") { |f|
         f.write(target.notice_text)
         f.write(content_prefix)
+        f.write(join_string)
         debug_files.each { |file|
           f.write("\n")
           f.write(target.get_debug_reference_for_file(file))

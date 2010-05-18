@@ -5,25 +5,27 @@ require 'fileutils'
 require 'zlib'
 require "open3"
 
-def class_attr(name)
-  class_eval %(
-        def self.#{name}(*rest)
-          if (rest.length>0)
-            @#{name}= rest[0]
-          else
-            @#{name} || (superclass.respond_to?(name) ? superclass.#{name} : nil)
+def class_attr(*rest)
+  rest.each { |name|
+    class_eval %(
+          def self.#{name}(*rest)
+            if (rest.length>0)
+              @#{name}= rest[0]
+            else
+              @#{name} || (superclass.respond_to?(name) ? superclass.#{name} : nil)
+            end
           end
-        end
-        def self.#{name}=(value)
-          @#{name}= value
-        end
-        def #{name}
-          @#{name} || self.class.#{name}
-        end
-        def #{name}=(value)
-          @#{name}=value
-        end
-      )
+          def self.#{name}=(value)
+            @#{name}= value
+          end
+          def #{name}
+            @#{name} || self.class.#{name}
+          end
+          def #{name}=(value)
+            @#{name}=value
+          end
+        )
+  }
 end
 
 def exist?(path, file)

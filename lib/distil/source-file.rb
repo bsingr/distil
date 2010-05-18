@@ -80,12 +80,7 @@ module Distil
     end
   
     def load_content
-      content= File.read(@full_path)
-      # Filter.each { |f|
-      #   next if !f.handles_file(self)
-      #   content= f.preprocess_content(self, content)
-      # }
-      content
+      File.read(@full_path)
     end
 
     def escape_embeded_content(content)
@@ -96,20 +91,7 @@ module Distil
       @content ||= load_content
     end
 
-    def filtered_content(options)
-      c= content || ""
-      # Filter.each { |f|
-      #   next if !f.handles_file(self)
-      #   c= f.filter_content(self, c, options)
-      # }
-      c
-    end
-    
-    def debug_content(options)
-      self.filtered_content(options)
-    end
-  
-    def minify_content(source)
+    def minified_content(source)
     	# Run the Y!UI Compressor
       return source if !content_type
     	buffer= ""

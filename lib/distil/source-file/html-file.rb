@@ -5,7 +5,7 @@ module Distil
     extension ".html"
     content_type "html"
 
-    def minify_content(source)
+    def minified_content(source)
       source.gsub(/>\s+</, "><")
     end
   

@@ -4,8 +4,8 @@ module Distil
     
     attr_reader :project_file
     attr_accessor :external
-    
-    option :mode, DEBUG_MODE
+
+    option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
     option :ignore_warnings, false
 
     option :minify, true
@@ -18,15 +18,19 @@ module Distil
     def initialize(project_file, settings={}, parent=nil)
       @project_file= File.expand_path(project_file)
       @projects_by_name={}
-      
+
       project_info= YAML.load_file(@project_file)
       project_info.merge!(settings)
       project_info["path"]= File.dirname(@project_file)
       
-      super(project_info, parent)
+      begin
+        super(project_info, parent)
+      rescue ValidationError
+        $stderr.print "#{APP_NAME}: #{project_file}: #{$!}\n"
+        exit 1
+      end
 
       load_external_projects
-      
     end
 
     def targets
@@ -38,6 +42,9 @@ module Distil
         next if !target
         @targets << target.new(value, self)
       }
+      
+      @targets.sort! { |a, b| a.sort_order<=>b.sort_order }
+      
       @targets
     end
     
@@ -65,6 +72,16 @@ module Distil
       }
     end
 
+    def update_products
+      @debug_products= []
+      @release_products= []
+      
+      targets.each { |target|
+        @debug_products << Interpolated.value_of(debug_name, target)
+        @release_products << Interpolated.value_of(minified_name, target)
+      }
+    end
+    
     def build
       if external
         wd= Dir.getwd
@@ -76,6 +93,7 @@ module Distil
       
       load_distileries
       build_external_projects
+      update_products
       build_targets
     end
 
@@ -114,9 +132,10 @@ module Distil
           FileUtils.cp_r(File.expand_path(project.output_folder), project_folder)
         end
         project.output_folder= project_folder
+        project.update_products
       }
     end
-  
+
     def build_targets
       puts "\n#{name}:\n\n"
       targets.each { |target|

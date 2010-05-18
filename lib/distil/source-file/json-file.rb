@@ -6,7 +6,7 @@ module Distil
     
     extension '.json'
   
-    def minify_content(source)
+    def minified_content(source)
       super("(#{source})")[1..-3]
     end
   

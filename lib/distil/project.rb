@@ -4,7 +4,7 @@ module Distil
   APP_TYPE = "application"
   
   WEAK_LINKAGE = 'weak'
-  INCLUDE_LINKAGE = 'include'
+  STRONG_LINKAGE = 'strong'
   LAZY_LINKAGE = 'lazy'
   
   DEBUG_MODE = 'debug'
@@ -14,13 +14,15 @@ module Distil
 
     include ErrorReporter
 
+    attr_accessor :debug_products, :release_products
     option :version, String
     option :name, String
     option :path, String
     option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
     option :source_folder, ProjectPath, "", :aliases=>['source']
-    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type']
-    option :linkage, WEAK_LINKAGE
+    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type'],
+            :valid_values=>[FRAMEWORK_TYPE, APP_TYPE]
+    option :linkage, WEAK_LINKAGE, :valid_values=> [WEAK_LINKAGE, STRONG_LINKAGE, LAZY_LINKAGE]
 
     option :import_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['import']
     option :concatenated_name, ProjectPath, "$(output_folder)/$(name)-uncompressed.$(product_extension)", :aliases=>['concatenated']
@@ -31,7 +33,8 @@ module Distil
 
     def initialize(config, parent=nil)
       super(config, parent)
-      
+      @debug_products=[]
+      @release_products=[]
       FileUtils.mkdir_p(output_folder)
     end
     
@@ -81,6 +84,9 @@ module Distil
       end
       return project
       
+    end
+    
+    def update_products
     end
     
     def build
