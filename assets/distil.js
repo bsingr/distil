@@ -3,12 +3,8 @@
 /** A resource bundle defined in the module that provides the bundle.
  */
 
-(function(window, document){
+(function(distil, window, document){
 
-    if (window.distil)
-        return;
-    var distil= window.distil= {};
-    
     var bundleIndex= {};
     var fetched= {};
     var root= document.documentElement;
@@ -235,6 +231,18 @@
         fetchAsset(url, fetchComplete, null, resource);
     };
 
+    var loadBundleFiles= function(bundle)
+    {
+        var files= (bundle.loadQueue||[]).concat(bundle.required.en);
+        var resource= bundle.resource;
+        var path= bundle.path;
+        
+        files.forEach(function(req) {
+            loadResource(path + req, null, null, null, resource);
+        });
+
+    };
+    
     distil.bundle= function(name, def)
     {
         if (name in bundleIndex)
@@ -285,13 +293,6 @@
         if (!bundle)
             throw new Error('No bundle with name: ' + name);
 
-        if (bundle.loaded)
-        {
-            if (callback)
-                window.setTimeout(function() { callback.call(scope, userData); }, 0);
-            return null;
-        }
-
         var complete= function()
         {
             if (callback)
@@ -299,27 +300,22 @@
             bundle.loaded= true;
             bundle.resource= null;
         };
-        
-        var resource= bundle.resource;
-        if (!resource)
+
+        if (bundle.loaded)
         {
-            resource= ResourceInfo(BUNDLE_TYPE, bundle.path, complete);
-            resource.parent= currentResource;
-            resource.fetched= true;
-            bundle.resource= resource;
-            currentResource.loadQueue.push(resource);
+            window.setTimeout(complete, 0);
+            return;
         }
         
-        var files= (bundle.loadQueue||[]).concat(bundle.required.en);
-        
-        files.forEach(function(req) {
-            loadResource(bundle.path + req, null, null, null, resource);
-        });
+        var resource= bundle.resource= ResourceInfo(BUNDLE_TYPE, bundle.path, complete);
+        resource.parent= currentResource;
+        resource.fetched= true;
+        currentResource.loadQueue.push(resource);
 
+        loadBundleFiles(bundle);
+        
         if (rootResource===currentResource)
             injectionComplete(currentResource);
-        
-        return resource;
     }
     
-})(window, document);
+})(window.distil={}, window, document);
