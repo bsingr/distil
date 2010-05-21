@@ -3,7 +3,6 @@
 /** A resource bundle defined in the module that provides the bundle.
  */
 
-
 (function(window, document){
 
     if (window.distil)
@@ -78,11 +77,11 @@
         xhr.send(null);
     };
 
-    distil.SCRIPT_TYPE= 'js';
-    distil.CSS_TYPE= 'css';
-    distil.BUNDLE_TYPE= 'bundle';
+    var SCRIPT_TYPE= 'js';
+    var CSS_TYPE= 'css';
+    var BUNDLE_TYPE= 'bundle';
     
-    distil.injectScript= function(url, callback, scope, userData)
+    var injectScript= distil.injectScript= function(url, callback, scope, userData)
     {
         var tag= document.createElement('script');
 
@@ -96,7 +95,7 @@
         };
     
         window.__filename__= url;
-    
+
         tag.onreadystatechange= function()
         {
             var readyState= tag && tag.readyState;
@@ -109,7 +108,7 @@
         root.insertBefore(tag, root.firstChild);
     };
 
-    distil.injectStylesheet= function(url, callback, scope, userData)
+    var injectStylesheet= distil.injectStylesheet= function(url, callback, scope, userData)
     {
         var link= document.createElement('link');
         link.type='text/css';
@@ -141,6 +140,12 @@
     
     var ResourceInfo= function(type, url, callback, scope, userData)
     {
+        if (!type)
+        {
+            var lastDot= url.lastIndexOf('.');
+            type= (-1!==lastDot)?url.substring(lastDot+1):"";
+        }
+        
         var lastSlash= url.lastIndexOf('/');
         if (-1===lastSlash)
             throw new Error("Couldn't determine path from script src: " + url);
@@ -160,7 +165,7 @@
         };
     };
 
-    var rootResource= ResourceInfo(distil.SCRIPT_TYPE, getRunningScriptSource());
+    var rootResource= ResourceInfo(SCRIPT_TYPE, getRunningScriptSource());
     rootResource.fetched= true;
     rootResource.injected= true;
     
@@ -173,11 +178,11 @@
         resource.injected= true;
         switch (resource.type)
         {
-            case distil.SCRIPT_TYPE:
-                distil.injectScript(resource.url, injectionComplete, null, resource);
+            case SCRIPT_TYPE:
+                injectScript(resource.url, injectionComplete, null, resource);
                 break;
-            case distil.CSS_TYPE:
-                distil.injectStylesheet(resource.url, injectionComplete, null, resource);
+            case CSS_TYPE:
+                injectStylesheet(resource.url, injectionComplete, null, resource);
                 break;
             default:
                 throw new Error('Unknown resource type: ' + resource.type);
@@ -193,9 +198,10 @@
             if (resource.loadQueue.length)
             {
                 currentResource= resource= resource.loadQueue.shift();
+                resource.complete= true;
                 if (!resource.fetched)
                     return;
-                if (!resource.url)
+                if (BUNDLE_TYPE===resource.type)
                     continue;
                 injectResource(resource);
                 return;
@@ -214,35 +220,48 @@
     var fetchComplete= function(resource)
     {
         resource.fetched= true;
+        var parent= resource.parent;
+        
         if (resource===currentResource)
             injectResource(resource);
     };
     
-    var loadResource= function(type, url, callback, scope, userData)
+    var loadResource= function(url, callback, scope, userData, parent)
     {
-        var resource= ResourceInfo(type, url, callback, scope, userData);
-        resource.parent= currentResource;
-        currentResource.loadQueue.push(resource);
+        var resource= ResourceInfo(null, url, callback, scope, userData);
+        parent= parent||currentResource;
+        resource.parent= parent;
+        parent.loadQueue.push(resource);
         fetchAsset(url, fetchComplete, null, resource);
     };
 
     distil.bundle= function(name, def)
     {
         if (name in bundleIndex)
-            throw new Error('Redefinition of bundle: ' + name);
+        {
+            var bundle= bundleIndex[name];
+            for (var p in def)
+                bundle[p]= def[p];
+            return;
+        }
 
+        def.path= currentResource.path + def.folder;
+        if ('/'!==def.path.slice(-1))
+            def.path+='/';
+            
+        def.callbacks= [];
+        def.loadQueue= [];
+        
         bundleIndex[name]= def;
     };
 
-    distil.queue= function(type, fragment)
+    distil.queue= function(name, fragment)
     {
-        loadResource(type, currentResource.path + fragment);
-    };
-    
-    distil.kick= function()
-    {
-        if (currentResource===rootResource)
-            injectionComplete(currentResource);
+        var bundle= bundleIndex[name];
+        if (bundle.resource)
+            loadResource(currentResource.path + fragment, null, null, null, bundle.resource);
+        else
+            bundle.loadQueue.push(fragment);
     };
     
     distil.onready= function(callback)
@@ -252,24 +271,55 @@
         else
             rootResource.callback= callback;
     }
+
+    distil.complete= function(name)
+    {
+        var bundle= bundleIndex[name];
+        if (bundle.loadQueue.length)
+            distil.loadBundle(name);
+    }        
     
     distil.loadBundle= function(name, callback, scope, userData)
     {
         var bundle= bundleIndex[name];
         if (!bundle)
             throw new Error('No bundle with name: ' + name);
-            
+
         if (bundle.loaded)
         {
             if (callback)
                 window.setTimeout(function() { callback.call(scope, userData); }, 0);
-            return;
+            return null;
+        }
+
+        var complete= function()
+        {
+            if (callback)
+                callback.call(scope, userData);
+            bundle.loaded= true;
+            bundle.resource= null;
+        };
+        
+        var resource= bundle.resource;
+        if (!resource)
+        {
+            resource= ResourceInfo(BUNDLE_TYPE, bundle.path, complete);
+            resource.parent= currentResource;
+            resource.fetched= true;
+            bundle.resource= resource;
+            currentResource.loadQueue.push(resource);
         }
         
-        var resource= ResourceInfo(distil.BUNDLE_TYPE, null, callback, scope, userData);
-        resource.parent= currentResource;
-        resource.fetched= true;
-        currentResource.loadQueue.push(resource);
+        var files= (bundle.loadQueue||[]).concat(bundle.required.en);
+        
+        files.forEach(function(req) {
+            loadResource(bundle.path + req, null, null, null, resource);
+        });
+
+        if (rootResource===currentResource)
+            injectionComplete(currentResource);
+        
+        return resource;
     }
     
 })(window, document);

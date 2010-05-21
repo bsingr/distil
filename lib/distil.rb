@@ -36,10 +36,10 @@ end
 
 require 'distil/error-reporter'
 require 'distil/configurable'
-require 'distil/interpolated'
-require 'distil/project-path'
+require 'distil/configurable/interpolated'
+require 'distil/configurable/project-path'
 require 'distil/source-file'
-require 'distil/file-set'
+require 'distil/configurable/file-set'
 require 'distil/task'
 require 'distil/target'
 require 'distil/project'

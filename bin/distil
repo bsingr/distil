@@ -2,6 +2,7 @@
 
 LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
 VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
+ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
 APP_NAME= File.basename($0)
 
 $:.unshift(LIB_DIR)

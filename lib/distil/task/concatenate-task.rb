@@ -5,8 +5,6 @@ module Distil
   class ConcatenateTask < Task
     
     option :join_string, "\n", :aliases=>['join']
-    option :content_prefix, :aliases=>['prefix']
-    option :content_suffix, :aliases=>['suffix']
 
     option :import_name
     option :concatenated_name
@@ -69,23 +67,23 @@ module Distil
     
       File.open(concatenated_name, "w") { |f|
         f.write(target.notice_text)
-        f.write(content_prefix)
+        f.write(target.content_prefix(:concatenated))
         concat_files.each { |file|
           f.write(join_string)
           f.write(target.get_content_for_file(file))
         }
-        f.write(content_suffix)
+        f.write(target.content_suffix(:concatenated))
       }
 
       File.open(debug_name, "w") { |f|
         f.write(target.notice_text)
-        f.write(content_prefix)
+        f.write(target.content_prefix(:debug))
         f.write(join_string)
         debug_files.each { |file|
           f.write("\n")
           f.write(target.get_debug_reference_for_file(file))
         }
-        f.write(content_suffix)
+        f.write(target.content_suffix(:debug))
       }
       
       return if !minify && !compress

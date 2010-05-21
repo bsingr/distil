@@ -98,7 +98,6 @@ class Configurable
     if @@options.has_key?(name)
       orig= @@options[name]
       if orig.has_key?(:type) && info.has_key?(:type) && info[:type]!=orig[:type]
-        puts "orig=#{orig.inspect} info=#{info.inspect}"
         raise ArgumentError, "Redefinition of option #{self}##{name} changes type"
       end
       if orig.has_key?(:value) && !info[:value].nil? && info[:value]!=orig[:value]
@@ -145,7 +144,7 @@ class Configurable
     when nil==type || NilClass==type
       value
     when String==type
-      value.to_s
+      value ? value.to_s : nil;
     when value.nil?
       value
     else

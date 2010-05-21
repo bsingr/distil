@@ -12,7 +12,7 @@ module Distil
     option :generate_docs, false
     option :product_extension
     option :notice_file, ProjectPath, "$(source_folder)/NOTICE", :aliases=>['notice']
-    option :force, false
+    option :force
     
     def initialize(settings, project)
       if settings.is_a?(Array)
@@ -52,6 +52,14 @@ module Distil
           @notice_text= "/*!\n#{text}\n*/\n\n"
         end
       end
+    end
+    
+    def content_prefix(variant)
+      ""
+    end
+
+    def content_suffix(variant)
+      ""
     end
     
     def include_file(file)

@@ -3,9 +3,7 @@ module Distil
   class DistilProject < Project
     
     attr_reader :project_file
-    attr_accessor :external
 
-    option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
     option :ignore_warnings, false
 
     option :minify, true
@@ -33,21 +31,6 @@ module Distil
       load_external_projects
     end
 
-    def targets
-      @targets if @targets
-
-      @targets= []
-      @extras.each { |key, value|
-        target= Target.from_config_key(key)
-        next if !target
-        @targets << target.new(value, self)
-      }
-      
-      @targets.sort! { |a, b| a.sort_order<=>b.sort_order }
-      
-      @targets
-    end
-    
     def find_file(file)
       return nil if external_projects.nil?
       parts= file.split(File::SEPARATOR)
@@ -72,28 +55,9 @@ module Distil
       }
     end
 
-    def update_products
-      @debug_products= []
-      @release_products= []
-      
-      targets.each { |target|
-        @debug_products << Interpolated.value_of(debug_name, target)
-        @release_products << Interpolated.value_of(minified_name, target)
-      }
-    end
-    
     def build
-      if external
-        wd= Dir.getwd
-        Dir.chdir(path)
-        system "distil --mode=#{mode}"
-        Dir.chdir(wd)
-        return
-      end
-      
       load_distileries
       build_external_projects
-      update_products
       build_targets
     end
 
@@ -117,22 +81,6 @@ module Distil
     def build_external_projects
       external_projects.each { |project|
         project.build
-        # external projects aren't included in the output when weak linked,
-        # they are just expected to be there, somehow. Like magic.
-        return if WEAK_LINKAGE==project.linkage
-        
-        project_folder= File.join(output_folder, project.name)
-        
-        FileUtils.rm_r(project_folder) if File.directory?(project_folder)
-        FileUtils.unlink(project_folder) if File.symlink?(project_folder)
-
-        if DEBUG_MODE==mode
-          FileUtils.symlink(File.expand_path(project.output_folder), project_folder)
-        else
-          FileUtils.cp_r(File.expand_path(project.output_folder), project_folder)
-        end
-        project.output_folder= project_folder
-        project.update_products
       }
     end
 

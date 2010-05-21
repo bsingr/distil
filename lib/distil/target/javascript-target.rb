@@ -1,7 +1,7 @@
 module Distil
 
   class JavascriptTarget < Target
-    option :bootstrap_source, "#{LIB_DIR}/js/distil.js"
+    option :bootstrap_source, "#{ASSETS_DIR}/distil.js"
     option :bootstrap
     
     config_key "js"
@@ -9,48 +9,81 @@ module Distil
     
     def initialize(settings, project)
       super(settings, project)
+      
+      @lazy_bundles= 0
+      
       @options.product_extension= "js"
-      @options.join_string= "\n/*jsl:ignore*/;/*jsl:end*/\n"
+      @options.join_string=<<-eos
+        
+        /*jsl:ignore*/;/*jsl:end*/
+        
+      eos
       
       if bootstrap.nil?
         self.bootstrap= (APP_TYPE==project.project_type)
       end
-      
-      if (bootstrap)
-        @options.content_prefix= "#{File.read(bootstrap_source)}\n\n/**#nocode+*/\n\n#{bundle_definitions}"
-        @options.content_suffix= "\n\ndistil.kick();\n\n/**#nocode-*/"
-      else
-        @options.content_prefix= "/**#nocode+*/\n\n"
-        @options.content_suffix= "\n\n/**#nocode-*/"
-        @options.content_suffix= "\n\ndistil.kick();\n\n/**#nocode-*/"
-      end
     end
 
-    def one_bundle_definition(project)
-      folder= ""
-      folder= relative_path(project.output_folder) if project!=self.project
-      debug_files= project.debug_products.map { |f| "'#{relative_path(f)}'" }
-      release_files= project.release_products.map { |f| "'#{relative_path(f)}'" }
-
-      "
-      distil.bundle('#{project.name}', {
-        folder: '#{folder}',
-        required: {
-          en_debug: [#{debug_files.join(',')}],
-          en: [#{release_files.join(',')}]
-        }
-      });
-      "
+    def bootstrap_script
+      @bootstrap_script||=File.read(bootstrap_source).strip
     end
     
-    def bundle_definitions
-      bundles= one_bundle_definition(project)
+    def content_prefix(variant)
+      if (bootstrap)
+        return <<-eos
+          #{bootstrap_script}
+          /**#nocode+*/
+          #{bundle_definitions(variant)}
+        eos
+      else
+        return <<-eos
+          /**#nocode+*/
+          #{bundle_definitions(variant)}
+        eos
+      end
+    end
+    
+    def content_suffix(variant)
+      complete= (:debug==variant || @lazy_bundles>0) ? "distil.complete('#{project.name}');" : ""
+      return <<-eos
+        #{complete}
+        /*#nocode-*/
+      eos
+    end
+
+    def one_bundle_definition(project, variant)
+      own_project= (project==self.project)
       
+      folder= own_project ? "" : relative_path(project.output_folder)
+      products= :debug==variant ? project.debug_products : project.products;
+      required= []
+      sources= []
+      
+      if (!own_project)
+        product_files= products.map { |f| "'#{SourceFile.path_relative_to_folder(f, project.output_folder)}'" }
+        required.concat(product_files)
+      end
+      
+      return <<-eos
+
+        distil.bundle('#{project.name}', {
+          folder: '#{folder}',
+          required: {
+            en: [#{required.join(',')}]
+          }
+        });
+      eos
+    end
+    
+    def bundle_definitions(variant)
+      bundles= ""
       project.external_projects.each { |p|
-        next if LAZY_LINKAGE==p.linkage
-        bundles << one_bundle_definition(p)
+        next if LAZY_LINKAGE!=p.linkage
+        @lazy_bundles+=1
+        bundles << one_bundle_definition(p, variant)
       }
-      bundles
+      return bundles if :debug!=variant && bundles.empty?
+      bundles << one_bundle_definition(project, variant)
     end
     
     def relative_path(file)
@@ -66,7 +99,10 @@ module Distil
     
     def get_debug_reference_for_file(file)
       path= relative_path(file)
-      "/*jsl:import #{path}*/\ndistil.queue(distil.SCRIPT_TYPE, \"#{path}\");" 
+      return <<-eos
+        /*jsl:import #{path}*/
+        distil.queue("#{project.name}", "#{path}");
+      eos
     end
     
     # Javascript targets handle files that end in .js

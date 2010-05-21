@@ -14,14 +14,15 @@ module Distil
 
     include ErrorReporter
 
-    attr_accessor :debug_products, :release_products
     option :version, String
     option :name, String
     option :path, String
+    option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
+
     option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
     option :source_folder, ProjectPath, "", :aliases=>['source']
-    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type'],
-            :valid_values=>[FRAMEWORK_TYPE, APP_TYPE]
+
+    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type'], :valid_values=>[FRAMEWORK_TYPE, APP_TYPE]
     option :linkage, WEAK_LINKAGE, :valid_values=> [WEAK_LINKAGE, STRONG_LINKAGE, LAZY_LINKAGE]
 
     option :import_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['import']
@@ -29,13 +30,40 @@ module Distil
     option :debug_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['debug']
     option :minified_name, ProjectPath, "$(output_folder)/$(name).$(product_extension)", :aliases=>['minified']
     option :compressed_name, ProjectPath, "$(output_folder)/$(name).$(product_extension).gz", :aliases=>['compressed']
+    option :force, false
 
 
     def initialize(config, parent=nil)
       super(config, parent)
-      @debug_products=[]
-      @release_products=[]
       FileUtils.mkdir_p(output_folder)
+    end
+    
+    def targets
+      @targets if @targets
+
+      @targets= []
+      @extras.each { |key, value|
+        target= Target.from_config_key(key)
+        next if !target
+        @targets << target.new(value, self)
+      }
+      
+      @targets.sort! { |a, b| a.sort_order<=>b.sort_order }
+      
+      @targets
+    end
+
+    def debug_products
+      return @debug_products if @debug_products
+      @debug_products= targets.map { |target| Interpolated.value_of(debug_name, target) }
+    end
+
+    def products
+      return @products if @products
+      @products= targets.map { |target| Interpolated.value_of(minified_name, target) }
+    end
+    
+    def build
     end
     
     def self.from_config(config, parent=nil)
@@ -68,16 +96,24 @@ module Distil
       
       case
       when exist?(path, "#{basename}.jsproj")
-        project= DistilProject.new(File.join(path, "#{basename}.jsproj"), config)
-        project.external= true
+        project_file= File.join(path, "#{basename}.jsproj")
+        project_info= YAML.load_file(project_file)
+        project_info.merge!(config)
+        project_info["path"]= path
+        project= ExternalProject.new(project_info, parent)
+        if parent
+          project.build_command ||= "distil --mode=#{parent.mode} --force=#{parent.force}"
+        else
+          project.build_command ||= "distil"
+        end
       when exist?(path, "Makefile") || exist?(path, "makefile")
-        project= ExternalProject.new(config)
+        project= ExternalProject.new(config, parent)
         project.build_command ||= "make"
       when exist?(path, "Rakefile") || exist?(path, "rakefile")
-        project= ExternalProject.new(config)
+        project= ExternalProject.new(config, parent)
         project.build_command ||= "rake"
       when exist?(path, "Jakefile") || exist?(path, "jakefile")
-        project= ExternalProject.new(config)
+        project= ExternalProject.new(config, parent)
         project.build_command ||= "jake"
       else
         ErrorReporter.error "Could not determine type for project: #{config["name"]}"
@@ -86,12 +122,6 @@ module Distil
       
     end
     
-    def update_products
-    end
-    
-    def build
-    end
-
   end
   
 end
