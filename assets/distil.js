@@ -1,11 +1,11 @@
 /*jsl:declare distil*/
 
-/** A resource bundle defined in the module that provides the bundle.
+/** A resource module defined in the module that provides the module.
  */
 
 (function(distil, window, document){
 
-    var bundleIndex= {};
+    var moduleIndex= {};
     var fetched= {};
     var root= document.documentElement;
     var head= document.getElementsByTagName('head')[0]||root;
@@ -30,6 +30,7 @@
                 xhr= new window.ActiveXObject(progId);
                 //  ActiveXObject constructor throws an exception
                 //  if the component isn't available.
+                xhr= null;
                 ConstructXhr.progId= progId;
                 return ConstructXhr;
             }
@@ -75,7 +76,7 @@
 
     var SCRIPT_TYPE= 'js';
     var CSS_TYPE= 'css';
-    var BUNDLE_TYPE= 'bundle';
+    var MODULE_TYPE= 'module';
     
     var injectScript= distil.injectScript= function(url, callback, scope, userData)
     {
@@ -197,7 +198,7 @@
                 resource.complete= true;
                 if (!resource.fetched)
                     return;
-                if (BUNDLE_TYPE===resource.type)
+                if (MODULE_TYPE===resource.type)
                     continue;
                 injectResource(resource);
                 return;
@@ -231,25 +232,23 @@
         fetchAsset(url, fetchComplete, null, resource);
     };
 
-    var loadBundleFiles= function(bundle)
+    var loadFiles= function(module)
     {
-        var files= (bundle.loadQueue||[]).concat(bundle.required.en);
-        var resource= bundle.resource;
-        var path= bundle.path;
+        var files= (module.loadQueue||[]).concat(module.required);
+        var resource= module.resource;
+        var path= module.path;
         
-        files.forEach(function(req) {
-            loadResource(path + req, null, null, null, resource);
-        });
-
+        for (var i=0, len=files.length; i<len; ++i)
+            loadResource(path + files[i], null, null, null, resource);
     };
     
-    distil.bundle= function(name, def)
+    distil.module= function(name, def)
     {
-        if (name in bundleIndex)
+        if (name in moduleIndex)
         {
-            var bundle= bundleIndex[name];
+            var module= moduleIndex[name];
             for (var p in def)
-                bundle[p]= def[p];
+                module[p]= def[p];
             return;
         }
 
@@ -260,16 +259,16 @@
         def.callbacks= [];
         def.loadQueue= [];
         
-        bundleIndex[name]= def;
+        moduleIndex[name]= def;
     };
 
     distil.queue= function(name, fragment)
     {
-        var bundle= bundleIndex[name];
-        if (bundle.resource)
-            loadResource(currentResource.path + fragment, null, null, null, bundle.resource);
+        var module= moduleIndex[name];
+        if (module.resource)
+            loadResource(currentResource.path + fragment, null, null, null, module.resource);
         else
-            bundle.loadQueue.push(fragment);
+            module.loadQueue.push(fragment);
     };
     
     distil.onready= function(callback)
@@ -282,37 +281,37 @@
 
     distil.complete= function(name)
     {
-        var bundle= bundleIndex[name];
-        if (bundle.loadQueue.length)
-            distil.loadBundle(name);
+        var module= moduleIndex[name];
+        if (module.loadQueue.length)
+            distil.require(name);
     }        
     
-    distil.loadBundle= function(name, callback, scope, userData)
+    distil.require= function(name, callback, scope, userData)
     {
-        var bundle= bundleIndex[name];
-        if (!bundle)
-            throw new Error('No bundle with name: ' + name);
+        var module= moduleIndex[name];
+        if (!module)
+            throw new Error('No module with name: ' + name);
 
         var complete= function()
         {
             if (callback)
                 callback.call(scope, userData);
-            bundle.loaded= true;
-            bundle.resource= null;
+            module.loaded= true;
+            module.resource= null;
         };
 
-        if (bundle.loaded)
+        if (module.loaded)
         {
             window.setTimeout(complete, 0);
             return;
         }
         
-        var resource= bundle.resource= ResourceInfo(BUNDLE_TYPE, bundle.path, complete);
+        var resource= module.resource= ResourceInfo(MODULE_TYPE, module.path, complete);
         resource.parent= currentResource;
         resource.fetched= true;
         currentResource.loadQueue.push(resource);
 
-        loadBundleFiles(bundle);
+        loadFiles(module);
         
         if (rootResource===currentResource)
             injectionComplete(currentResource);

@@ -3,6 +3,8 @@ module Distil
   class JavascriptTarget < Target
     option :bootstrap_source, "#{ASSETS_DIR}/distil.js"
     option :bootstrap
+    option :global_export, :aliases=>['export']
+    option :additional_globals, [], :aliases=>['globals']
     
     config_key "js"
     sort_order 1
@@ -11,6 +13,8 @@ module Distil
       super(settings, project)
       
       @lazy_bundles= 0
+
+      @options.global_export=project.name if true==global_export
       
       @options.product_extension= "js"
       @options.join_string=<<-eos
@@ -29,26 +33,31 @@ module Distil
     end
     
     def content_prefix(variant)
-      if (bootstrap)
-        return <<-eos
-          #{bootstrap_script}
-          /**#nocode+*/
-          #{bundle_definitions(variant)}
-        eos
-      else
-        return <<-eos
-          /**#nocode+*/
-          #{bundle_definitions(variant)}
-        eos
+      prefix= ""
+      prefix << "#{bootstrap_script}\n" if bootstrap
+      prefix << "/**#nocode+*/\n\n#{bundle_definitions(variant)}\n\n"
+
+      if :debug != variant && global_export
+        exports= [global_export, *additional_globals].join(", ")
+        prefix << "(function(#{exports}){\n\n"
       end
+      return prefix
     end
     
     def content_suffix(variant)
-      complete= (:debug==variant || @lazy_bundles>0) ? "distil.complete('#{project.name}');" : ""
-      return <<-eos
-        #{complete}
-        /*#nocode-*/
-      eos
+      suffix=""
+      
+      if :debug != variant && global_export
+        exports= ["window.#{global_export}={}", *additional_globals].join(", ")
+        suffix << "})(#{exports});\n\n"
+      end
+      
+      if :debug==variant || @lazy_bundles>0
+        suffix << "distil.complete('#{project.name}');\n\n"
+      end
+      
+      suffix << "/*#nocode-*/"
+      suffix
     end
 
     def one_bundle_definition(project, variant)
@@ -66,11 +75,9 @@ module Distil
       
       return <<-eos
 
-        distil.bundle('#{project.name}', {
+        distil.module('#{project.name}', {
           folder: '#{folder}',
-          required: {
-            en: [#{required.join(',')}]
-          }
+          required: [#{required.join(',')}]
         });
       eos
     end
