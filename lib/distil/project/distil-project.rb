@@ -6,10 +6,7 @@ module Distil
 
     option :ignore_warnings, false
 
-    option :minify, true
-    option :compress, true
-
-    option :external_projects, [], :aliases=>['use', 'uses']
+    option :external_projects, [], :aliases=>['external']
     option :distileries, Array, :aliases=>['distilleries', 'distilery', 'distillery']
   
   

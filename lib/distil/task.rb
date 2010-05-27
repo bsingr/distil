@@ -3,13 +3,20 @@ require 'set'
 module Distil
   
   class Task < Configurable
-    attr_reader :target
     
-    def initialize(target)
-      @target= target
-      super({}, target)
+    def initialize(options, product)
+      @product= product
+      super(options, product)
     end
 
+    def project
+      product.target.project
+    end
+
+    def target
+      product.target
+    end
+    
     @@tasks= []
     def self.inherited(subclass)
       @@tasks << subclass
@@ -17,43 +24,6 @@ module Distil
   
     def self.tasks
       @@tasks
-    end
-    
-    @@task_aliases= {}
-    def self.task_name_alias(name)
-      @@task_aliases[name]= self
-    end
-  
-    @@task_index= nil
-    def self.task_index
-      return @@task_index if @@task_index
-      @@task_index= {}
-      @@tasks.each { |t|
-        next if !t.task_name
-        @@task_index[t.task_name]= t
-      }
-      @@task_index
-    end
-  
-    def self.by_name(taskname)
-      self.task_index[taskname] || @@task_aliases[taskname]
-    end
-  
-    def self.task_name
-      s= (self.to_s)[/(.*)Task/,1]
-      return nil if !s || s.empty?
-      s.gsub!(/\w+::/, '')
-      s.gsub!(/([A-Z]+)([A-Z][a-z])/,'\1-\2')
-      s.gsub!(/([a-z\d])([A-Z])/,'\1-\2')
-      s.downcase
-    end
-
-    def task_name
-      self.class.task_name
-    end
-
-    def project
-      target.project
     end
     
     def handles_file?(file)

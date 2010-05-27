@@ -1,8 +1,8 @@
-require 'distil/configurable/interpolated'
+require 'distil/configurable/project-path'
 
 module Distil
   
-  class ProjectPath < Interpolated
+  class OutputPath < Interpolated
     
     def self.value_of(value, owner)
       return value if !owner
@@ -12,7 +12,7 @@ module Distil
       return value if 0==value.index(File::SEPARATOR)
       return value if !owner.is_a?(Configurable)
       
-      path= owner.get_option("path")
+      path= owner.get_option("output_folder")
       return value if !path || path.empty?
       
       return value if value!=path && 0==value.index(path)

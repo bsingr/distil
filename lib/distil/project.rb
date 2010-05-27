@@ -25,14 +25,6 @@ module Distil
     option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type'], :valid_values=>[FRAMEWORK_TYPE, APP_TYPE]
     option :linkage, WEAK_LINKAGE, :valid_values=> [WEAK_LINKAGE, STRONG_LINKAGE, LAZY_LINKAGE]
 
-    option :import_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['import']
-    option :concatenated_name, ProjectPath, "$(output_folder)/$(name)-uncompressed.$(product_extension)", :aliases=>['concatenated']
-    option :debug_name, ProjectPath, "$(output_folder)/$(name)-debug.$(product_extension)", :aliases=>['debug']
-    option :minified_name, ProjectPath, "$(output_folder)/$(name).$(product_extension)", :aliases=>['minified']
-    option :compressed_name, ProjectPath, "$(output_folder)/$(name).$(product_extension).gz", :aliases=>['compressed']
-    option :force, false
-
-
     def initialize(config, parent=nil)
       super(config, parent)
       FileUtils.mkdir_p(output_folder)
@@ -40,29 +32,23 @@ module Distil
     
     def targets
       @targets if @targets
-
-      @targets= []
-      @extras.each { |key, value|
-        target= Target.from_config_key(key)
-        next if !target
-        @targets << target.new(value, self)
-      }
       
-      @targets.sort! { |a, b| a.sort_order<=>b.sort_order }
+      @targets= []
+      v= @extras['targets']
+      
+      return @targets if !v
+      
+      v.each { |target_hash|
+        target_hash.each { |key, value|
+          value['name']= key
+          target= Target.new(value, self)
+          @targets << target
+        }
+      }
       
       @targets
     end
 
-    def debug_products
-      return @debug_products if @debug_products
-      @debug_products= targets.map { |target| Interpolated.value_of(debug_name, target) }
-    end
-
-    def products
-      return @products if @products
-      @products= targets.map { |target| Interpolated.value_of(minified_name, target) }
-    end
-    
     def build
     end
     

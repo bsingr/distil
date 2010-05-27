@@ -157,3 +157,7 @@ class Configurable
   end
   
 end
+
+Dir.glob("#{File.dirname(__FILE__)}/configurable/*.rb") { |file|
+  require file
+}
