@@ -2,24 +2,23 @@ module Distil
 
   JSDOC_COMMAND= "#{VENDOR_DIR}/jsdoc-toolkit/jsrun.sh"
   
-  class DocumentJsTask < Task
+  class JavascriptDocProduct < Product
 
     option :jsdoc_conf, "#{LIB_DIR}/jsdoc.conf"
     option :jsdoc_template, "#{VENDOR_DIR}/jsdoc-extras/templates/coherent"
     option :jsdoc_plugins, "#{VENDOR_DIR}/jsdoc-extras/plugins"
     option :doc_folder, Interpolated, "$(path)/doc"
 
-    def handles_file(file)
-      ["js"].include?(file.content_type)
+    extension "js"
+    
+    def filename
+      File.join(doc_folder, 'index.html')
     end
     
-    def products
-      return [] if !target.generate_docs
-      [File.join(doc_folder, 'index.html')]
-    end
-    
-    def document_files(files)
-
+    def write_output
+      return if up_to_date
+      @up_to_date= true
+      
       return if (!File.exists?(JSDOC_COMMAND))
 
       tmp= Tempfile.new("jsdoc.conf")
@@ -28,7 +27,7 @@ module Distil
       doc_files= []
       
       files.each { |f|
-        next if !handles_file(f)
+        next if !handles_file?(f)
         p= f.file_path || f.to_s
         doc_files << "\"#{p}\""
       }

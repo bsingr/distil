@@ -75,8 +75,10 @@
     };
 
     var SCRIPT_TYPE= 'js';
+    var JSNIB_TYPE= 'jsnib';
     var CSS_TYPE= 'css';
     var MODULE_TYPE= 'module';
+    var NO_MODULE_ERROR= 'No module with name: ';
     
     var injectScript= distil.injectScript= function(url, callback, scope, userData)
     {
@@ -176,6 +178,7 @@
         switch (resource.type)
         {
             case SCRIPT_TYPE:
+            case JSNIB_TYPE:
                 injectScript(resource.url, injectionComplete, null, resource);
                 break;
             case CSS_TYPE:
@@ -249,6 +252,8 @@
             var module= moduleIndex[name];
             for (var p in def)
                 module[p]= def[p];
+                
+            distil.require(name);
             return;
         }
 
@@ -260,6 +265,8 @@
         def.loadQueue= [];
         
         moduleIndex[name]= def;
+        if (def.required && def.required.length)
+            distil.require(name);
     };
 
     distil.queue= function(name, fragment)
@@ -290,7 +297,7 @@
     {
         var module= moduleIndex[name];
         if (!module)
-            throw new Error('No module with name: ' + name);
+            throw new Error(NO_MODULE_ERROR + name);
 
         var complete= function()
         {
@@ -315,6 +322,15 @@
         
         if (rootResource===currentResource)
             injectionComplete(currentResource);
+    }
+    
+    distil.urlForAssetInModule= function(asset, name, callback, scope)
+    {
+        var module= moduleIndex[name];
+        if (!module)
+            throw new Error(NO_MODULE_ERROR + name);
+        
+        return module.path + (module.asset_map[asset]||asset);
     }
     
 })(window.distil={}, window, document);

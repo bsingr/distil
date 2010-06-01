@@ -1,13 +1,10 @@
 module Distil
 
   class JavascriptTarget < Target
-    option :bootstrap_source, "#{ASSETS_DIR}/distil.js"
+    option :bootstrap_src, "#{ASSETS_DIR}/distil.js"
     option :bootstrap
     option :global_export, :aliases=>['export']
     option :additional_globals, [], :aliases=>['globals']
-    
-    config_key "js"
-    sort_order 1
     
     def initialize(settings, project)
       super(settings, project)
@@ -24,7 +21,7 @@ module Distil
       eos
       
       if bootstrap.nil?
-        self.bootstrap= (APP_TYPE==project.project_type)
+        self.bootstrap= (APP_TYPE==project.target_type)
       end
     end
 

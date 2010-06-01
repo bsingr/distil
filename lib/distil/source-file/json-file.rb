@@ -4,7 +4,7 @@ module Distil
   
   class JsonFile < JavascriptFile
     
-    extension '.json'
+    extension 'json'
   
     def minified_content(source)
       super("(#{source})")[1..-3]

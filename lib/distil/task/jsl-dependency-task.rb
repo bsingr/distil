@@ -26,7 +26,7 @@ module Distil
           if (File.exists?(import_file))
             file.add_dependency SourceFile.from_path(import_file)
           else
-            dependency= target.find_file($1)
+            dependency= target.find_file($1, file)
             if (dependency)
               file.add_dependency dependency
             else

@@ -13,7 +13,7 @@ module Distil
       return ["js"].include?(file.content_type)
     end
 
-    def validate_files(files)
+    def process_files(files)
       return if (!File.exists?(LINT_COMMAND))
 
       tmp= Tempfile.new("jsl.conf")
@@ -32,9 +32,8 @@ module Distil
       
       # add aliases
       target.project.external_projects.each { |project|
-        import_file= Interpolated.value_of(project.import_name, self)
+        import_file= project.product_name(:import, 'js')
         next if !File.exist?(import_file)
-
         tmp << "+alias #{project.name} #{import_file}\n"
       }
     

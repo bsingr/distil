@@ -2,9 +2,6 @@ module Distil
 
   class CssTarget < Target
     
-    config_key "css"
-    sort_order 0
-    
     def initialize(settings, project)
       super(settings, project)
       @options.product_extension= "css"

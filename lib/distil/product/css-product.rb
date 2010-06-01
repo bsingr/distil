@@ -1,32 +1,43 @@
-require 'distil/product/minified-product'
-
 module Distil
 
-  class CssProduct < MinifiedProduct
-    
+  class CssProduct < Product
+    include Concatenated
     extension "css"
-    config_key "css"
-    sort_order 0
-    
-    def initialize(settings, project)
-      super(settings, project)
-    end
+  end
 
-    def get_debug_reference_for_file(file)
-      path=file.relative_to_folder(source_folder)
-      "@import url(\"#{path}\");"
+  class CssMinifiedProduct < Product
+    include Minified
+    extension "css"
+  end
+
+  class CssDebugProduct < Product
+    extension "css"
+
+    def filename
+      debug_name
     end
     
-    # Javascript targets handle files that end in .js
-    def handles_file?(file)
-      ['.css'].include?(file.extension)
-    end
-    
-    def minimise_product
-  		# put each rule on its own line, and deletes @import statements
-  		super.gsub(/\}/,"}\n").gsub(/.*@import url\(\".*\"\);/,'')
+    def write_output
+      return if up_to_date
+      @up_to_date= true
+      
+      File.open(filename, "w") { |f|
+        f.write(target.notice_text)
+        
+        target.project.external_projects.each { |ext|
+          next if STRONG_LINKAGE!=ext.linkage
+        
+          debug_file= ext.product_name(:debug, "css")
+          next if !File.exist?(debug_file)
+          f.write("@import url(\"#{relative_path(debug_file)});\n")
+        }
+      
+        files.each { |file|
+          f.write("@import url(\"#{relative_path(file)}\");\n")
+        }
+      }
     end
     
   end
-
+  
 end

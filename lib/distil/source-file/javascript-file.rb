@@ -1,7 +1,7 @@
 module Distil
   
   class JavascriptFile < SourceFile
-    extension '.js'
+    extension 'js'
     content_type 'js'
     
     def can_embed_as_content(file)

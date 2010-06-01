@@ -4,17 +4,17 @@ module Distil
   
   class Task < Configurable
     
-    def initialize(options, product)
-      @product= product
-      super(options, product)
+    def initialize(options, target)
+      @target= target
+      super(options, target)
     end
 
     def project
-      product.target.project
+      target.project
     end
 
     def target
-      product.target
+      @target
     end
     
     @@tasks= []
@@ -29,34 +29,14 @@ module Distil
     def handles_file?(file)
       false
     end
-  
-    #  Do a simple token substitution. Tokens begin and end with @.
-    def replace_tokens(string, params)
-    	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
-    		key= $2
-    		ws= $1
-    		value= params[key]||m;
-    		if (ws && ws.length)
-    			ws + value.split("\n").join(ws);
-    		else
-    			value
-    		end
-    	}
-    end
 
-    def products
+    def find_files
       []
     end
-  
+    
     def include_file(file)
     end
-    
-    def validate_files(files)
-    end
-  
-    def document_files(files)
-    end
-  
+
     def process_files(files)
     end
   

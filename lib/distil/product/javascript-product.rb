@@ -1,127 +1,130 @@
-require 'distil/product/minified-product'
-
 module Distil
 
-  class JavascriptProduct < MinifiedProduct
-    option :bootstrap_source, "#{ASSETS_DIR}/distil.js"
-    option :bootstrap
+  class JavascriptProduct < JavascriptBaseProduct
+    include Concatenated
+
+    extension "js"
+    
     option :global_export, :aliases=>['export']
     option :additional_globals, [], :aliases=>['globals']
     
-    extension "js"
-    config_key "js"
-    sort_order 1
-    
-    def initialize(settings, project)
-      super(settings, project)
+    def initialize(settings, target)
+      super(settings, target)
       
-      @lazy_bundles= 0
-
-      @options.global_export=project.name if true==global_export
-      
-      @join_string=<<-eos
-        
-        /*jsl:ignore*/;/*jsl:end*/
-        
-      eos
-      
-      if bootstrap.nil?
-        self.bootstrap= (APP_TYPE==project.project_type)
-      end
+      @options.global_export=target.name if true==global_export
     end
 
-    def bootstrap_script
-      @bootstrap_script||=File.read(bootstrap_source).strip
+    def filename
+      concatenated_name
     end
-    
-    def content_prefix(variant)
+
+    def concatenated_prefix
+      return @concatenated_prefix if @concatenated_prefix
       prefix= ""
-      prefix << "#{bootstrap_script}\n" if bootstrap
-      prefix << "/**#nocode+*/\n\n#{bundle_definitions(variant)}\n\n"
-
-      if :debug != variant && global_export
+      prefix << "/*#nocode+*/\n\n"
+      prefix << "#{bootstrap_source}\n\n\n" if bootstrap
+      
+      if global_export
         exports= [global_export, *additional_globals].join(", ")
         prefix << "(function(#{exports}){\n\n"
       end
-      return prefix
+
+      @concatenated_prefix= prefix
     end
     
-    def content_suffix(variant)
+    def concatenated_suffix
+      return @concatenated_suffix if @concatenated_suffix
+      
       suffix=""
       
-      if :debug != variant && global_export
+      if global_export
         exports= ["window.#{global_export}={}", *additional_globals].join(", ")
-        suffix << "})(#{exports});\n\n"
+        suffix << "\n\n})(#{exports});\n\n"
       end
       
-      if :debug==variant || @lazy_bundles>0
-        suffix << "distil.complete('#{project.name}');\n\n"
+      suffix << "\n\n/*#nocode-*/\n\n"
+      if 0 < assets.length
+        asset_references= assets.map { |a|
+          content= target.get_content_for_file(a)
+          content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+          "\"#{target.alias_for_asset(a)}\": \"#{content}\""
+        }
+
+        suffix << <<-EOS
+distil.module('#{target.name}', {
+  folder: '',
+  assets: {
+    #{asset_references.join(",\n    ")}
+  }
+});
+EOS
       end
-      
-      suffix << "/*#nocode-*/"
-      suffix
+      @concatenated_suffix= suffix
     end
 
-    def one_bundle_definition(project, variant)
-      own_project= (project==self.project)
-      
-      folder= own_project ? "" : relative_path(project.output_folder)
-      products= :debug==variant ? project.debug_products : project.products;
-      required= []
-      sources= []
-      
-      if (!own_project)
-        product_files= products.map { |f| "'#{SourceFile.path_relative_to_folder(f, project.output_folder)}'" }
-        required.concat(product_files)
-      end
-      
-      return <<-eos
+    def can_embed_file?(file)
+      ["html"].include?(file.content_type)
+    end
 
-        distil.module('#{project.name}', {
-          folder: '#{folder}',
-          required: [#{required.join(',')}]
-        });
-      eos
+    def embed_file(file)
+      # content= target.get_content_for_file(file)
+      # content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+      # 
+      # "distil.asset(\"#{target.alias_for_asset(file)}\", \"#{content}\");\n"
     end
     
-    def bundle_definitions(variant)
-      bundles= ""
-      project.external_projects.each { |p|
-        next if LAZY_LINKAGE!=p.linkage
-        @lazy_bundles+=1
-        bundles << one_bundle_definition(p, variant)
+  end
+
+  class JavascriptMinifiedProduct < Product
+    include Minified
+    extension "js"
+  end
+
+  class JavascriptDebugProduct < JavascriptBaseProduct
+    extension "js"
+  
+    def filename
+      debug_name
+    end
+
+    def can_embed_file?(file)
+      ["html"].include?(file.content_type)
+    end
+    
+    def write_output
+      return if up_to_date
+      @up_to_date= true
+      
+      copy_bootstrap_script
+      
+      required_files= files.map { |file| "'#{relative_path(file)}'" }
+      asset_files= assets.map { |file| "'#{target.alias_for_asset(file)}': '#{relative_path(file)}'" }
+      
+      target.project.external_projects.each { |ext|
+        next if STRONG_LINKAGE!=ext.linkage
+        
+        debug_file= ext.product_name(:debug, "js")
+        next if !File.exist?(debug_file)
+        required_files.unshift("'#{relative_path(debug_file)}'")
       }
-      return bundles if :debug!=variant && bundles.empty?
-      bundles << one_bundle_definition(project, variant)
-    end
-    
-    def relative_path(file)
-      file=SourceFile.from_path(file) if file.is_a?(String)
       
-      file_path= file.full_path
-      output_folder= project.output_folder
-      
-      path=file.relative_to_folder(source_folder) if 0==file_path.index(source_folder)
-      path=file.relative_to_folder(output_folder) if 0==file_path.index(output_folder)
-      path
-    end
-    
-    def get_debug_reference_for_file(file)
-      path= relative_path(file)
-      return <<-eos
-        /*jsl:import #{path}*/
-        distil.queue("#{project.name}", "#{path}");
-      eos
-    end
-    
-    # Javascript targets handle files that end in .js
-    def handles_file?(file)
-      ['.js'].include?(file.extension)
-    end
+      File.open(filename, "w") { |f|
+        f.write(target.notice_text)
+        f.write("#{bootstrap_source}\n\n") if bootstrap
+        files.each { |file|
+          f.write("/*jsl:import #{relative_path(file)}*/\n")
+        }
+        f.write(<<-EOS)
+distil.module('#{target.name}', {
+  folder: '',
+  required: [#{required_files.join(", ")}],
+  asset_map: {
+    #{asset_files.join(",\n    ")}
+  }
+});
+EOS
+      }
 
-    def build_assets
-      super
-      FileUtils.cp bootstrap_source, project.output_folder if !bootstrap
     end
     
   end

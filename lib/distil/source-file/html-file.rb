@@ -2,7 +2,7 @@ module Distil
 
   class HtmlFile < SourceFile
 
-    extension ".html"
+    extension "html"
     content_type "html"
 
     def minified_content(source)

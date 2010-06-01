@@ -4,6 +4,7 @@ require 'tempfile'
 require 'fileutils'
 require 'zlib'
 require "open3"
+require 'uri'
 
 def class_attr(*rest)
   rest.each { |name|
@@ -30,6 +31,34 @@ end
 
 def exist?(path, file)
   File.file?(File.join(path, file))
+end
+
+module Distil
+  
+  FRAMEWORK_TYPE = "framework"
+  APP_TYPE = "application"
+  
+  WEAK_LINKAGE = 'weak'
+  STRONG_LINKAGE = 'strong'
+  LAZY_LINKAGE = 'lazy'
+  
+  DEBUG_MODE = 'debug'
+  RELEASE_MODE = 'release'
+  
+end
+
+#  Do a simple token substitution. Tokens begin and end with @.
+def replace_tokens(string, params)
+	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
+		key= $2
+		ws= $1
+		value= params[key]||m;
+		if (ws && ws.length)
+			ws + value.split("\n").join(ws);
+		else
+			value
+		end
+	}
 end
 
 

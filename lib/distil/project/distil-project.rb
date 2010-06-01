@@ -28,18 +28,20 @@ module Distil
       load_external_projects
     end
 
-    def find_file(file)
-      return nil if external_projects.nil?
-      parts= file.split(File::SEPARATOR)
-      project_name= parts[0]
+    def targets
+      @targets if @targets
+      
+      @targets= []
+      target_list= @extras['targets']
+      
+      if !target_list
+        @targets << Target.new(@extras.clone, self)
+        return @targets
+      end
 
-      return nil if !@projects_by_name.has_key?(project_name)
-
-      project= @projects_by_name[project_name]
-
-      return SourceFile::from_path(import_name) if 1==parts.length
-        
-      SourceFile::from_path(File.join(project.source_folder, *parts[1..-1]))
+      @targets= target_list.map { |target|
+        Target.new(target, self)
+      }
     end
 
     def load_external_projects
@@ -52,7 +54,12 @@ module Distil
       }
     end
 
+    def external_project_with_name(name)
+      @projects_by_name[name]
+    end
+    
     def build
+      FileUtils.mkdir_p(output_folder)
       load_distileries
       build_external_projects
       build_targets
@@ -82,7 +89,6 @@ module Distil
     end
 
     def build_targets
-      puts "\n#{name}:\n\n"
       targets.each { |target|
         target.build
       }

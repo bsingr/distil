@@ -48,7 +48,7 @@ module Distil
       file= @@file_cache[full_path]
       return file if file
     
-      extension= File.extname(filepath)
+      extension= File.extname(filepath)[1..-1]
     
       @@file_types.each { |handler|
         next if (handler.extension != extension)
@@ -67,7 +67,7 @@ module Distil
       @full_path
     end
 
-    def basename(suffix="")
+    def basename(suffix=extension)
       File.basename(@full_path, suffix)
     end
   
@@ -91,6 +91,10 @@ module Distil
       @content ||= load_content
     end
 
+    def last_modified
+      @last_modified ||= File.stat(@full_path).mtime
+    end
+    
     def minified_content(source)
     	# Run the Y!UI Compressor
       return source if !content_type

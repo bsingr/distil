@@ -1,54 +1,16 @@
 module Distil
   
-  FRAMEWORK_TYPE = "framework"
-  APP_TYPE = "application"
-  
-  WEAK_LINKAGE = 'weak'
-  STRONG_LINKAGE = 'strong'
-  LAZY_LINKAGE = 'lazy'
-  
-  DEBUG_MODE = 'debug'
-  RELEASE_MODE = 'release'
-
   class Project < Configurable
 
     include ErrorReporter
 
-    option :version, String
-    option :name, String
+    option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
+    option :source_folder, ProjectPath, ""
+    
     option :path, String
     option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
-
-    option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
-    option :source_folder, ProjectPath, "", :aliases=>['source']
-
-    option :project_type, String, FRAMEWORK_TYPE, :aliases=>['type'], :valid_values=>[FRAMEWORK_TYPE, APP_TYPE]
-    option :linkage, WEAK_LINKAGE, :valid_values=> [WEAK_LINKAGE, STRONG_LINKAGE, LAZY_LINKAGE]
-
-    def initialize(config, parent=nil)
-      super(config, parent)
-      FileUtils.mkdir_p(output_folder)
-    end
+    option :force
     
-    def targets
-      @targets if @targets
-      
-      @targets= []
-      v= @extras['targets']
-      
-      return @targets if !v
-      
-      v.each { |target_hash|
-        target_hash.each { |key, value|
-          value['name']= key
-          target= Target.new(value, self)
-          @targets << target
-        }
-      }
-      
-      @targets
-    end
-
     def build
     end
     

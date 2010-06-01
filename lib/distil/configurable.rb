@@ -18,6 +18,7 @@ class Configurable
   @@options= {}
 
   def get_option(name)
+    return nil if !@options.respond_to?(name)
     value=@options[name]
     value.respond_to?(:value_of) ? value.value_of(self) : value
   end
@@ -119,7 +120,7 @@ class Configurable
       @options[name]= convert_type(@@options[name][:type], value)
     end
     
-    self.send :protected, "#{name}=".to_s
+    # self.send :protected, "#{name}=".to_s
     
   end
 

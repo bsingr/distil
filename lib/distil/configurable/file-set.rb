@@ -3,25 +3,31 @@ module Distil
   class FileSet
     include Enumerable
     include ErrorReporter
-    attr_reader :files
   
-    def initialize(value, owner=nil)
+    def initialize(value=[], owner=nil)
       @owner= owner
-      @files= []
-      self.files= value
+      @source_set= value
     end
 
-    def files=(set)
+    def files
+      return @files if @files
+      @files=[]
       case
-      when (set.is_a?(String))
-        include_file(set)
-      when (set.is_a?(Array))
-        set.each { |f| include_file(f) }
+        when (@source_set.is_a?(String))
+          include_file(@source_set)
+        when (@source_set.is_a?(Array))
+          @source_set.each { |f| include_file(f) }
       end
+      @files
+    end
+    
+    def files=(set)
+      @files= nil
+      @source_set= set
     end
 
     def include?(file)
-      @files.include?(file)
+      files.include?(file)
     end
     
     def self.from_options(set, owner)
@@ -29,6 +35,13 @@ module Distil
     end
   
     def include_file(file)
+      files if !@files
+      
+      if file.is_a?(SourceFile)
+        @files << file if !@files.include?(file)
+        return
+      end
+      
       if @owner
         full_path= File.expand_path(File.join([@owner.source_folder, file].compact))
       else
@@ -65,7 +78,7 @@ module Distil
     end
   
     def each
-      @files.each { |f| yield f }
+      files.each { |f| yield f }
     end
   
   end

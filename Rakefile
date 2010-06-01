@@ -13,6 +13,7 @@ begin
     gemspec.files.reject! { |f| File.directory?(f) }
     gemspec.executables= ['distil']
     gemspec.extensions= ['vendor/extconf.rb']
+    gemspec.add_dependency('json', '>= 1.4.3')
   end
 
   Jeweler::GemcutterTasks.new

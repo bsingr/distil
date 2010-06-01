@@ -2,7 +2,7 @@ module Distil
 
   class CssFile < SourceFile
 
-    extension ".css"
+    extension "css"
     content_type "css"
 
     def minified_content(source)
