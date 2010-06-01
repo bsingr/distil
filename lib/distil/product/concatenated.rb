@@ -7,12 +7,10 @@ module Distil
     # join_string -> a string to use to join the files together
     # target -> the container of the files
     
-    def concatenated_prefix
-      ""
+    def before_files(f)
     end
 
-    def concatenated_suffix
-      ""
+    def after_files(f)
     end
     
     def filename
@@ -37,7 +35,7 @@ module Distil
         }
 
         f.write("\n\n")
-        f.write(concatenated_prefix)
+        before_files(f)
         f.write("\n\n")
 
         files.each { |file|
@@ -46,12 +44,8 @@ module Distil
         }
         
         f.write("\n\n")
-        f.write(concatenated_suffix)
+        after_files(f)
         f.write("\n\n");
-        
-        assets.each { |file|
-          f.write(embed_file(file))
-        }
         
       }
     end

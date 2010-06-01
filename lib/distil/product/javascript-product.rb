@@ -18,30 +18,23 @@ module Distil
       concatenated_name
     end
 
-    def concatenated_prefix
-      return @concatenated_prefix if @concatenated_prefix
-      prefix= ""
-      prefix << "/*#nocode+*/\n\n"
-      prefix << "#{bootstrap_source}\n\n\n" if bootstrap
+    def before_files(f)
+      f.puts("/*#nocode+*/")
+      f.puts(bootstrap_source) if bootstrap
       
       if global_export
         exports= [global_export, *additional_globals].join(", ")
-        prefix << "(function(#{exports}){\n\n"
+        f.puts "(function(#{exports}){"
       end
-
-      @concatenated_prefix= prefix
     end
     
-    def concatenated_suffix
-      return @concatenated_suffix if @concatenated_suffix
-      
-      suffix=""
-      
+    def after_files(f)
       if global_export
         exports= ["window.#{global_export}={}", *additional_globals].join(", ")
-        suffix << "\n\n})(#{exports});\n\n"
+        f.puts "})(#{exports});"
       end
       
+      suffix= ""
       suffix << "\n\n/*#nocode-*/\n\n"
       if 0 < assets.length
         asset_references= assets.map { |a|
@@ -59,18 +52,11 @@ distil.module('#{target.name}', {
 });
 EOS
       end
-      @concatenated_suffix= suffix
+      f.puts(suffix)
     end
 
     def can_embed_file?(file)
       ["html"].include?(file.content_type)
-    end
-
-    def embed_file(file)
-      # content= target.get_content_for_file(file)
-      # content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
-      # 
-      # "distil.asset(\"#{target.alias_for_asset(file)}\", \"#{content}\");\n"
     end
     
   end
