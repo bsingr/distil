@@ -14,14 +14,48 @@ module Distil
       @options.global_export=target.name if true==global_export
     end
 
-    def filename
-      concatenated_name
-    end
-
-    def before_files(f)
+    def before_externals(f)
       f.puts("/*#nocode+*/")
       f.puts(bootstrap_source) if bootstrap
-      
+    end
+
+    def after_externals(f)
+    end
+    
+    def before_files(f)
+
+      if 0 != assets.length
+        asset_references= []
+        asset_map= []
+        assets.each { |a|
+          if can_embed_file?(a)
+            content= target.get_content_for_file(a)
+            content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
+            asset_references << "\"#{target.alias_for_asset(a)}\": \"#{content}\""
+          else
+            asset_alias= target.alias_for_asset(a)
+            asset_path= relative_path(a)
+            next if asset_alias==asset_path
+            asset_map << "'#{asset_alias}': '#{asset_path}'" 
+          end
+        }
+
+        f << <<-EOS
+        
+distil.module('#{target.name}', {
+  folder: '',
+  asset_map: {
+    #{asset_map.join(",\n    ")}
+  },
+  assets: {
+    #{asset_references.join(",\n    ")}
+  }
+});
+
+
+EOS
+      end
+
       if global_export
         exports= [global_export, *additional_globals].join(", ")
         f.puts "(function(#{exports}){"
@@ -33,30 +67,11 @@ module Distil
         exports= ["window.#{global_export}={}", *additional_globals].join(", ")
         f.puts "})(#{exports});"
       end
+
+      f.puts "\n\n/*#nocode-*/\n\n"
       
-      suffix= ""
-      suffix << "\n\n/*#nocode-*/\n\n"
-      if 0 < assets.length
-        asset_references= assets.map { |a|
-          content= target.get_content_for_file(a)
-          content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
-          "\"#{target.alias_for_asset(a)}\": \"#{content}\""
-        }
-
-        suffix << <<-EOS
-distil.module('#{target.name}', {
-  folder: '',
-  assets: {
-    #{asset_references.join(",\n    ")}
-  }
-});
-EOS
-      end
-      f.puts(suffix)
-    end
-
-    def can_embed_file?(file)
-      ["html"].include?(file.content_type)
+      f.puts "distil.kick();" if bootstrap
+      
     end
     
   end
@@ -67,16 +82,9 @@ EOS
   end
 
   class JavascriptDebugProduct < JavascriptBaseProduct
+    include Debug
     extension "js"
   
-    def filename
-      debug_name
-    end
-
-    def can_embed_file?(file)
-      ["html"].include?(file.content_type)
-    end
-    
     def write_output
       return if up_to_date
       @up_to_date= true
@@ -84,14 +92,17 @@ EOS
       copy_bootstrap_script
       
       required_files= files.map { |file| "'#{relative_path(file)}'" }
-      asset_files= assets.map { |file| "'#{target.alias_for_asset(file)}': '#{relative_path(file)}'" }
+      asset_map= []
+      assets.each { |a|
+        asset_alias= target.alias_for_asset(a)
+        asset_path= relative_path(a)
+        next if asset_alias==asset_path
+        asset_map << "'#{asset_alias}': '#{asset_path}'" 
+      }
       
-      target.project.external_projects.each { |ext|
-        next if STRONG_LINKAGE!=ext.linkage
-        
-        debug_file= ext.product_name(:debug, "js")
-        next if !File.exist?(debug_file)
-        required_files.unshift("'#{relative_path(debug_file)}'")
+      external_files.each { |ext|
+        next if !File.exist?(ext)
+        required_files.unshift("'#{relative_path(ext)}'")
       }
       
       File.open(filename, "w") { |f|
@@ -101,11 +112,13 @@ EOS
           f.write("/*jsl:import #{relative_path(file)}*/\n")
         }
         f.write(<<-EOS)
+//distil.debug= true;
+
 distil.module('#{target.name}', {
   folder: '',
   required: [#{required_files.join(", ")}],
   asset_map: {
-    #{asset_files.join(",\n    ")}
+    #{asset_map.join(",\n    ")}
   }
 });
 EOS

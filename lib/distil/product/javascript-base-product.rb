@@ -18,6 +18,10 @@ module Distil
       end
     end
 
+    def can_embed_file?(file)
+      ["html", "js"].include?(file.content_type)
+    end
+
     def bootstrap_source
       @bootstrap_source||=File.read(bootstrap_script).strip
     end

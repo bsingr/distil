@@ -8,6 +8,10 @@ module Distil
       minified_name
     end
     
+    def external_files
+      []
+    end
+    
     def write_output
       return if up_to_date
       @up_to_date= true

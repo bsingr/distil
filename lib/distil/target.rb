@@ -176,13 +176,18 @@ module Distil
       end
     end
     
+    def add_asset(asset)
+      @assets << asset
+    end
+    
     def set_alias_for_asset(asset_alias, asset_file)
+      @assets << asset_file
       @asset_aliases[asset_file.to_s]= asset_alias
     end
     
     def alias_for_asset(asset_file)
       full_path= asset_file.to_s
-      @asset_aliases[full_path] || File.basename(full_path)
+      @asset_aliases[full_path] || asset_file.relative_to_folder(source_folder)
     end
     
     def build

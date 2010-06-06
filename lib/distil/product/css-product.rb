@@ -11,12 +11,9 @@ module Distil
   end
 
   class CssDebugProduct < Product
+    include Debug
     extension "css"
 
-    def filename
-      debug_name
-    end
-    
     def write_output
       return if up_to_date
       @up_to_date= true
@@ -24,12 +21,9 @@ module Distil
       File.open(filename, "w") { |f|
         f.write(target.notice_text)
         
-        target.project.external_projects.each { |ext|
-          next if STRONG_LINKAGE!=ext.linkage
-        
-          debug_file= ext.product_name(:debug, "css")
-          next if !File.exist?(debug_file)
-          f.write("@import url(\"#{relative_path(debug_file)});\n")
+        external_files.each { |ext|
+          next if !File.exist?(ext)
+          f.write("@import url(\"#{relative_path(ext)});\n")
         }
       
         files.each { |file|

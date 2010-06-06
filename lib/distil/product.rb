@@ -14,7 +14,7 @@ module Distil
     def initialize(settings, target)
       @target= target
       @files= []
-      @assets= []
+      @assets= Set.new
       super(settings, target)
     end
 
@@ -23,7 +23,7 @@ module Distil
     end
     
     def handles_file?(file)
-      [extension].include?(file.content_type)
+      [extension].include?(file.extension)
     end
     
     def files
@@ -32,14 +32,9 @@ module Distil
     
     def files=(fileset)
       fileset.each { |f|
-        if handles_file?(f)
-          @files << f
-          next
-        end
-        if can_embed_file?(f)
-          @assets << f
-          next
-        end
+        next if !handles_file?(f)
+        @files << f
+        @assets.merge(f.assets)
       }
     end
     
@@ -50,11 +45,23 @@ module Distil
       return @up_to_date=false if !File.exists?(filename)
       
       output_modified= File.stat(filename).mtime
+      max_asset_modified= File.stat(target.project.project_file).mtime
+
+      assets.each { |f|
+        max_asset_modified= f.last_modified if f.last_modified > max_asset_modified
+      }
+
+      return @up_to_date=false if (output_modified < max_asset_modified)
       
-      asset_mtimes= assets.map { |f| f.last_modified }
-      asset_mtimes << File.stat(target.project.project_file).mtime
-      
-      @up_to_date= (output_modified > asset_mtimes.max)
+      external_files.each { |f|
+        next if !File.exist?(f)
+        last_modified= File.stat(f).mtime
+        max_asset_modified= last_modified if last_modified > max_asset_modified
+      }
+
+      return @up_to_date=false if (output_modified < max_asset_modified)
+
+      @up_to_date= true
     end
 
     def filename
@@ -82,6 +89,7 @@ module Distil
 end
 
 require 'distil/product/concatenated'
+require 'distil/product/debug'
 require 'distil/product/minified'
 require 'distil/product/css-product'
 require 'distil/product/javascript-base-product'
