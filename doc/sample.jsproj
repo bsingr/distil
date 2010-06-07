@@ -1,0 +1,66 @@
+output: build/$(mode)
+mode: debug
+
+# Adding a project to the external section adds the project's products to the
+# include path for any targets. For example, /*jsl:import coherent*/ will resolve
+# to the import
+
+external:
+  - name: coherent
+    path: /Users/jeff/Projects/coherent
+    # output: build
+    # source: src
+    # import: $(name)-debug.js
+    # debug: $(name)-debug.js
+    # concatenated: $(name)-uncompressed.js
+    # minified: $(name).js
+    # gzipped: $(name).js.gz
+    # info: info.json
+    repository: git://github.com/jeffwatkins/coherent.git
+    
+  - name: markdown
+    path: http://attacklab.net/showdown/showdown.js
+      
+targets:
+  - name: MyFramework
+    type: framework
+    version: 3.0.0
+    notice: src/NOTICE
+    validate: true
+
+    include:
+      - coherent
+      - markdown
+    
+    source:
+      - src/css/file1.css
+      - src/css/file2.css
+      - src/css/file3.css
+
+      - src/js/file1.js
+      - src/js/file2.js
+      - src/js/file3.js
+      # Standard wildcards may be used rather than specifying each individual
+      # source file.
+      - src/js/folder/*.js
+      # In addition, wildcards can be used for folders to process an entire
+      # tree.
+      - src/js/tree/**/*.js
+      
+    nibs:
+      # Default linkage for a JSNib is strong, meaning the definition of the
+      # JSNib and all its assets are included in the final products.
+      - src/nibs/startup.jsnib
+      # Specifying linkage: lazy means that the JSNib definition will not be
+      # included in the final products and will be loaded dynamically when
+      # requested.
+      - path: src/nibs/account.jsnib
+        linkage: lazy
+      # For JSNibs that have lazy linkage, specifying preload will force the
+      # browser to fetch the definition and any assets after the framework is
+      # loaded. This makes loading the JSNib much faster at the expense of
+      # using up a bit of browser cache.
+      - path: src/nibs/login-dialog.jsnib
+        linkage: lazy
+        preload: true
+          

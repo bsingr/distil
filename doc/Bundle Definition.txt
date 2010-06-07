@@ -1,0 +1,45 @@
+  distil.bundle('MyBundle', {
+          folder: "MyBundle",
+          //  These assets will be loaded when loading the bundle
+          required: {
+              //  English release mode
+              en: ["MyBundle.css", "MyBundle.js"],
+              //  English debug mode
+              en_debug: ["MyBundle-debug.css", "MyBundle-debug.js"],
+              //  Spanish release mode
+              es: ["MyBundle.es.css", "MyBundle.es.js"],
+              //  Spanish debug mode
+              es_debug: ["MyBundle-debug.es.css", "MyBundle-debug.es.js"],
+              //  Spanish in US, release mode
+              es_US: ["MyBundle.es_US.css", "MyBundle.es_US.js"],
+              //  Spanish in US, debug mode
+              es_US_debug: ["MyBundle-debug.es_US.css", "MyBundle-debug.es_US.js"]
+          },
+          //  These assets will be loaded and inserted into the browser
+          //  after loading the bundle and after firing any callbacks. 
+          preload: {
+              en: ["welcome.css", "welcome.js"],
+              en_debug: ["welcome-debug.css", "welcome-debug.js"],
+              es: ["welcome.es.css", "welcome.es.js"],
+              es_debug: ["welcome-debug.es.css", "welcome-debug.es.js"],
+              es_US: ["welcome.es_US.css", "welcome.es_US.js"],
+              es_US_debug: ["welcome-debug.es_US.css", "welcome-debug.es_US.js"]
+          },
+          //  Should lazy assets begin caching immediately after loading the
+          //  bundle? This makes loading the lazy assets faster, but will
+          //  consume more browser memory.
+          precache: true,
+          //  These assets are available for lazy loading
+          lazy: {
+              account: {
+                  en: ["account.css", "account.js"],
+                  en_debug: ["account-debug.css", "account-debug.js"],
+                  es: ["account.es.css", "account.es.js"],
+                  es_debug: ["account-debug.es.css", "account-debug.es.js"],
+                  es_US: ["account.es_US.css", "account.es_US.js"],
+                  es_US_debug: ["account-debug.es_US.css", "account-debug.es_US.js"]
+              },
+              ...
+          }
+      });
+  }

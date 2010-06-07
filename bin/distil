@@ -1,13 +1,16 @@
 #!/usr/bin/env ruby
 
-$script_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
-$vendor_dir= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
-$app_name= File.basename($0)
+LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
+VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
+ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
+APP_NAME= File.basename($0)
 
-require "#{$script_dir}/project"
+$:.unshift(LIB_DIR)
+
+require "distil"
 
 arg_settings= {}
-project_file= "distil.yml"
+project_file= nil
 args= []
 
 ARGV.each { |v|
@@ -32,13 +35,33 @@ ARGV.each { |v|
   arg_settings[key]= value
 }
 
-# Change working directory to the folder containing the build YML file.
-project_file= File.expand_path(project_file)
+def find_project_file(dir=nil)
+  dir ||= Dir.pwd
+  
+  while dir.length > 1
+    Dir.glob(File.join(dir, '*.jsproj')) { |file|
+      return file if File.basename(dir)===File.basename(file, '.jsproj')
+    }
+    dir = File.dirname(dir)
+  end
+  
+end
 
-if (!File.exists?(project_file))
-  puts "#{$app_name}: can't find project file: #{project_file}"
+  
+# Change working directory to the folder containing the build YML file.
+project_file||= find_project_file
+
+if !project_file
+  puts "#{APP_NAME}: can't find project file"
   exit
 end
 
-project= Project.new(project_file, arg_settings)
-project.build
+project= Distil::DistilProject.new(project_file, arg_settings)
+
+if 0==args.length
+  args << "build"
+end
+
+args.each { |cmd|
+  project.send cmd
+}

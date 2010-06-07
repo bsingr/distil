@@ -1,0 +1,69 @@
+Project structure:
+
+  MyFramework
+    MyFramework.jsproj
+    MyFramework.tmproj
+    build/
+      debug/
+        de/
+          MyFramework.css
+          MyFramework.css.gz
+          MyFramework-debug.css
+          MyFramework-uncompressed.css
+          MyFramework.js
+          MyFramework.js.gz
+          MyFramework-debug.js
+          MyFramework-uncompressed.js
+          SubFramework => symlink to SubFramework/de
+          AnotherSubFramework => symlink to AnotherSubFramework/de
+          resources => symlink to ../../resources/de
+          ...
+          src => symlink to ../../src
+        en/
+          MyFramework.css
+          MyFramework.css.gz
+          MyFramework-debug.css
+          MyFramework-uncompressed.css
+          MyFramework.js
+          MyFramework.js.gz
+          MyFramework-debug.js
+          MyFramework-uncompressed.js
+          SubFramework => symlink to SubFramework/en
+          AnotherSubFramework => symlink to AnotherSubFramework/en
+          resources => symlink to ../../resources/en
+          ...
+          src => symlink to ../../src
+        es/
+          MyFramework.css
+          MyFramework.css.gz
+          MyFramework-debug.css
+          MyFramework-uncompressed.css
+          MyFramework.js
+          MyFramework.js.gz
+          MyFramework-debug.js
+          MyFramework-uncompressed.js
+          SubFramework => symlink to SubFramework/es
+          AnotherSubFramework => symlink to AnotherSubFramework/es
+          resources => symlink to ../../resources/es
+          ...
+          src => symlink to ../../src
+        
+    src/
+      css/
+        ...
+      js/
+        ...
+    resources/
+      foo.jsnib
+      de/
+        foo.html
+        local.css
+        strings.json
+      en/
+        foo.html
+        local.css
+        strings.json
+      es/
+        foo.html
+        local.css
+        strings.json
