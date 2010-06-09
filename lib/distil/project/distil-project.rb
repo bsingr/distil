@@ -19,13 +19,14 @@ module Distil
       project_info["path"]= File.dirname(@project_file)
       
       begin
+
         super(project_info, parent)
-      rescue ValidationError
-        $stderr.print "#{APP_NAME}: #{project_file}: #{$!}\n"
+        load_external_projects
+
+      rescue ValidationError => err
+        puts "#{APP_NAME}: #{SourceFile.path_relative_to_folder(project_file, Dir.pwd)}: #{err.message}\n"
         exit 1
       end
-
-      load_external_projects
     end
 
     def targets
