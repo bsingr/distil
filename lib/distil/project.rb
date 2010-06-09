@@ -13,18 +13,69 @@ module Distil
     
     def build
     end
+
+    def self.fetch_project_using_git(options = {})
+      uri= options["repository"]
+      path= options["path"]
+      
+      FileUtils.mkdir_p(path)
+      Dir.chdir path do
+        init_cmd = "git init"
+        init_cmd+= " -q"
+        # init_cmd += " -q" if options[:quiet] and not $verbose
+        # puts init_cmd if $verbose
+        system(init_cmd)
+        base_cmd = "git pull --depth 1 #{uri}"
+        base_cmd+= " -q"
+        # base_cmd += " -q" if options[:quiet] and not $verbose
+        base_cmd += " #{options[:version]}" if options[:version]
+        # puts base_cmd if $verbose
+        if system(base_cmd)
+          # puts "removing: .git .gitignore" if $verbose
+          # FileUtils.rm_rf %w(.git .gitignore)
+        else
+          rm_rf path
+        end
+      end
+    end
     
     def self.from_config(config, parent=nil)
 
       if config.is_a?(String)
         string= config
+        uri= URI.parse(string)
+        
         config= { "name" => File.basename(config, ".*") }
-        full_path= File.expand_path(string)
+        if uri.scheme
+          config["repository"]= uri.to_s
+        else
+          config["path"]= uri.to_s
+        end
+        
+        full_path= File.expand_path(config["path"])
+        
         if File.exist?(full_path) && File.file?(full_path)
           config["path"]= File.dirname(full_path)
         else
           config["path"]= full_path
         end
+      end
+
+      if !config["name"]
+        case when config["repository"]
+          uri= URI.parse(config["repository"])
+          config["name"]= File.basename(uri.path, ".*")
+        when config["path"]
+          config["name"]= File.basename(config["path"], ".*")
+        else
+          raise ValidationError.new("External project has neither name, path nor repository")
+        end
+      end
+      
+      config["path"]||= "ext/#{config["name"]}"
+
+      if config["repository"] && !File.directory?(config["path"])
+        fetch_project_using_git(config)
       end
       
       config["mode"]||= parent.mode if parent
