@@ -79,6 +79,12 @@ module Distil
         @products << product if !product.files.empty?
       }
 
+      if APP_TYPE==target_type
+        product= PageProduct.new(@extras.clone, self)
+        product.files= files
+        @products << product if !product.files.empty?
+      end
+      
       @products
     end
     

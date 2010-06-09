@@ -46,12 +46,16 @@ module Distil
 
     def load_external_projects
       return if !external_projects
-
-      self.external_projects= external_projects.map { |config|
+      projects= []
+      
+      external_projects.each { |config|
         project= Project.from_config(config, self)
         next if !project
+        projects << project
         @projects_by_name[project.name]= project
       }
+      
+      self.external_projects= projects
     end
 
     def external_project_with_name(name)
