@@ -50,6 +50,9 @@ module Distil
       assets.each { |f|
         max_asset_modified= f.last_modified if f.last_modified > max_asset_modified
       }
+      files.each { |f|
+        max_asset_modified= f.last_modified if f.last_modified > max_asset_modified
+      }
 
       return @up_to_date=false if (output_modified < max_asset_modified)
       
