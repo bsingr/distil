@@ -21,6 +21,8 @@ module Distil
     option :minify, true
     option :compress, true
 
+    option :global_export, :aliases=>['export']
+
     def initialize(settings, project)
       @project=project
 
@@ -38,6 +40,8 @@ module Distil
       if !exclude_files
         self.exclude_files= FileSet.new
       end
+
+      @options.global_export=name if true==global_export
 
       include_projects.each { |p|
         external_project= project.external_project_with_name(p)

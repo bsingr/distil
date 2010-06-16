@@ -5,14 +5,14 @@ module Distil
 
     extension "js"
     
-    option :global_export, :aliases=>['export']
+    option :global_export
     option :additional_globals, [], :aliases=>['globals']
     
-    def initialize(settings, target)
-      super(settings, target)
-      
-      @options.global_export=target.name if true==global_export
-    end
+    # def initialize(settings, target)
+    #   super(settings, target)
+    #   
+    #   @options.global_export=target.name if true==global_export
+    # end
 
     def before_externals(f)
       f.puts("/*#nocode+*/")
@@ -84,6 +84,8 @@ EOS
   class JavascriptDebugProduct < JavascriptBaseProduct
     include Debug
     extension "js"
+
+    option :global_export
   
     def write_output
       return if up_to_date
@@ -108,6 +110,12 @@ EOS
       File.open(filename, "w") { |f|
         f.write(target.notice_text)
         f.write("#{bootstrap_source}\n\n") if bootstrap
+        
+        if global_export
+          f.write("window.#{global_export}={};");
+          f.write("\n\n");
+        end
+        
         files.each { |file|
           f.write("/*jsl:import #{relative_path(file)}*/\n")
         }

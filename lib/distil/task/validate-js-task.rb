@@ -8,6 +8,7 @@ module Distil
     include ErrorReporter
     
     option :jsl_conf, "#{LIB_DIR}/jsl.conf"
+    option :global_export
     
     def handles_file(file)
       return ["js"].include?(file.content_type)
@@ -29,6 +30,10 @@ module Distil
       tmp << "\n"
 
       tmp << "+define distil\n"
+      
+      if (global_export)
+        tmp << "+define #{global_export}"
+      end
       
       # add aliases
       target.project.external_projects.each { |project|
