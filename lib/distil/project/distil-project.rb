@@ -63,6 +63,25 @@ module Distil
       @projects_by_name[name]
     end
     
+    def launch
+      build if !up_to_date
+      
+      require 'webrick'
+      config= {
+        :Port => 8888
+      }
+
+      server= WEBrick::HTTPServer.new(config)
+      server.mount("/", WEBrick::HTTPServlet::FileHandler, output_folder)
+
+      ['INT', 'TERM'].each { |signal|
+         trap(signal){ server.shutdown} 
+      }
+      b= Browser.new
+      b.open("http://localhost:8888/")
+      server.start
+    end
+    
     def build
       FileUtils.mkdir_p(output_folder)
       load_distileries
@@ -93,6 +112,10 @@ module Distil
       }
     end
 
+    def up_to_date
+      targets.all? { |target| target.up_to_date }
+    end
+    
     def build_targets
       targets.each { |target|
         target.build

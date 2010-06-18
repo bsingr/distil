@@ -200,6 +200,10 @@ module Distil
       @asset_aliases[full_path] || asset_file.relative_to_folder(source_folder)
     end
     
+    def up_to_date
+      products.all? { |p| p.up_to_date }
+    end
+    
     def build
       puts "\n#{name}:\n\n"
       

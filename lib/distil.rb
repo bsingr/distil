@@ -61,6 +61,7 @@ def replace_tokens(string, params)
 	}
 end
 
+require 'distil/browser'
 require 'distil/error-reporter'
 require 'distil/configurable'
 require 'distil/source-file'
