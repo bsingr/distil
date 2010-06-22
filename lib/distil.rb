@@ -5,6 +5,7 @@ require 'fileutils'
 require 'zlib'
 require "open3"
 require 'uri'
+require 'open-uri'
 
 def class_attr(*rest)
   rest.each { |name|

@@ -43,16 +43,13 @@ module Distil
 
       @options.global_export=name if true==global_export
 
-      include_projects.each { |p|
-        external_project= project.external_project_with_name(p)
-        if !external_project
-          raise ValidationError.new("No such external project: #{p}")
-        end
-        
-        if (WEAK_LINKAGE==external_project.linkage)
-          external_project.linkage= STRONG_LINKAGE
-        end
+      projects= []
+      include_projects.each { |name|
+        ext= project.external_project_with_name(name)
+        ext.linkage= STRONG_LINKAGE
+        projects << ext
       }
+      self.include_projects= projects
     end
 
     def source_folder
@@ -206,12 +203,16 @@ module Distil
     
     def build
       puts "\n#{name}:\n\n"
+
+      if !up_to_date
+        tasks.each { |t| t.process_files(files) }
       
-      tasks.each { |t| t.process_files(files) }
+        products.each { |p| p.write_output }
       
-      products.each { |p| p.write_output }
+        build_assets
+      end
       
-      build_assets
+      report
     end
     
     def find_file(file, source_file=nil)

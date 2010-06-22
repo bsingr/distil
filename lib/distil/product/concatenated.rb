@@ -33,9 +33,7 @@ module Distil
       return @external_files if @external_files
       @external_files= []
       
-      target.project.external_projects.each { |ext|
-        next if STRONG_LINKAGE!=ext.linkage
-        
+      target.include_projects.each { |ext|
         @external_files << ext.product_name(:concatenated, File.extname(filename)[1..-1])
       }
       @external_files

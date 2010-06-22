@@ -56,18 +56,22 @@ module Distil
         uri= URI.parse(string)
         
         config= { "name" => File.basename(config, ".*") }
-        if uri.scheme
+        
+        case
+        when ['.js', '.css'].include?(File.extname(uri.path))
+          config["href"]= uri.to_s
+        when uri.scheme
           config["repository"]= uri.to_s
         else
           config["path"]= uri.to_s
-        end
         
-        full_path= File.expand_path(config["path"])
+          full_path= File.expand_path(config["path"])
         
-        if File.exist?(full_path) && File.file?(full_path)
-          config["path"]= File.dirname(full_path)
-        else
-          config["path"]= full_path
+          if File.exist?(full_path) && File.file?(full_path)
+            config["path"]= File.dirname(full_path)
+          else
+            config["path"]= full_path
+          end
         end
       end
 
@@ -80,6 +84,10 @@ module Distil
         else
           raise ValidationError.new("External project has neither name, path nor repository")
         end
+      end
+
+      if config["href"]
+        return RemoteProject.new(config, parent)
       end
       
       config["path"]||= "ext/#{config["name"]}"
@@ -135,5 +143,6 @@ module Distil
   
 end
 
+require 'distil/project/remote-project'
 require 'distil/project/external-project'
 require 'distil/project/distil-project'

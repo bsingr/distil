@@ -120,7 +120,6 @@ module Distil
       targets.each { |target|
         target.build
       }
-      report
     end
   end
   

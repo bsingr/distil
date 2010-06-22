@@ -75,7 +75,7 @@ class Configurable
 
     arg= rest.shift
 
-    if (arg.is_a?(Class))
+    if (arg.is_a?(Class) || arg==URI)
       info[:type]= arg
       info[:value]= nil
       arg= rest.shift
@@ -148,6 +148,8 @@ class Configurable
       value ? value.to_s : nil;
     when value.nil?
       value
+    when URI==type
+      URI.parse(value)
     else
       if type.respond_to?(:from_options)
         type.from_options(value, self)

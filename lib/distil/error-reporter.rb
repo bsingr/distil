@@ -54,6 +54,8 @@ module Distil
     def report
       puts "\n" if (@@error_count>0 || @@warning_count>0)
       puts "#{@@error_count} error(s), #{@@warning_count} warning(s)#{ignore_warnings ? " ignored" : ""}"
+      @@error_count=0
+      @@warning_count=0
     end
     
   end

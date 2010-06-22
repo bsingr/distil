@@ -54,17 +54,13 @@ module Distil
         max_asset_modified= f.last_modified if f.last_modified > max_asset_modified
       }
 
-      return @up_to_date=false if (output_modified < max_asset_modified)
-      
       external_files.each { |f|
         next if !File.exist?(f)
         last_modified= File.stat(f).mtime
         max_asset_modified= last_modified if last_modified > max_asset_modified
       }
 
-      return @up_to_date=false if (output_modified < max_asset_modified)
-
-      @up_to_date= true
+      return @up_to_date=(output_modified > max_asset_modified)
     end
 
     def filename

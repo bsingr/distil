@@ -2,7 +2,7 @@ module Distil
 
   CSS_IMPORT_REGEX = /@import\s+url\("?(.*\.css)"?\)/
   
-  class CssDependencyFilter < Task
+  class CssDependencyTask < Task
   
     def handles_file(file)
       return ["css"].include?(file.content_type)

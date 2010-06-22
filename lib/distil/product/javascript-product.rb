@@ -64,7 +64,7 @@ EOS
     
     def after_files(f)
       if global_export
-        exports= ["window.#{global_export}={}", *additional_globals].join(", ")
+        exports= ["window.#{global_export}=window.#{global_export}||{}", *additional_globals].join(", ")
         f.puts "})(#{exports});"
       end
 
@@ -112,7 +112,7 @@ EOS
         f.write("#{bootstrap_source}\n\n") if bootstrap
         
         if global_export
-          f.write("window.#{global_export}={};");
+          f.write("window.#{global_export}=window.#{global_export}||{};");
           f.write("\n\n");
         end
         
