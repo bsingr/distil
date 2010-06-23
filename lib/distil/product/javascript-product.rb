@@ -7,12 +7,6 @@ module Distil
     
     option :global_export
     option :additional_globals, [], :aliases=>['globals']
-    
-    # def initialize(settings, target)
-    #   super(settings, target)
-    #   
-    #   @options.global_export=target.name if true==global_export
-    # end
 
     def before_externals(f)
       f.puts("/*#nocode+*/")

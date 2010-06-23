@@ -85,6 +85,7 @@ module Distil
     def build
       FileUtils.mkdir_p(output_folder)
       load_distileries
+      targets
       build_external_projects
       build_targets
     end

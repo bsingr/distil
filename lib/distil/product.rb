@@ -30,6 +30,10 @@ module Distil
       @files
     end
     
+    def external_files
+      []
+    end
+    
     def files=(fileset)
       fileset.each { |f|
         next if !handles_file?(f)

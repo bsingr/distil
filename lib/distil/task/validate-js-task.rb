@@ -36,9 +36,9 @@ module Distil
         tmp << "+define #{global_export}\n"
       end
       
-      additional_globals.each { |g|
-        tmp << "+define #{g}\n"
-      }
+      # additional_globals.each { |g|
+      #   tmp << "+define #{g}\n"
+      # }
       
       # add aliases
       target.project.external_projects.each { |project|
