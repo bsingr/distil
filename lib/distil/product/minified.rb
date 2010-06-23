@@ -1,7 +1,5 @@
 module Distil
 
-  COMPRESSOR= File.expand_path("#{VENDOR_DIR}/yuicompressor-2.4.2.jar")
-    
   module Minified
     
     def filename

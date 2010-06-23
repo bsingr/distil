@@ -70,7 +70,8 @@ module Distil
       end
 
       if generate_docs
-        product_types << JavascriptDocProduct
+        # product_types << JavascriptDocProduct
+        product_types << PDocProduct
       end
       
       @products=[]

@@ -45,6 +45,8 @@ module Distil
   
   DEBUG_MODE = 'debug'
   RELEASE_MODE = 'release'
+
+  COMPRESSOR= File.expand_path("#{VENDOR_DIR}/yuicompressor-2.4.2.jar")
   
 end
 

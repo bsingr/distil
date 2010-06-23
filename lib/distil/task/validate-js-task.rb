@@ -35,6 +35,9 @@ module Distil
       if (global_export)
         tmp << "+define #{global_export}\n"
       end
+
+      # Seems to cause extraneous warnings if your additional_globals include
+      # standard global objects. Need to filter those out before doing this.
       
       # additional_globals.each { |g|
       #   tmp << "+define #{g}\n"
