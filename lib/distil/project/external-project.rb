@@ -39,7 +39,7 @@ module Distil
       return if WEAK_LINKAGE==linkage
           
       FileUtils.rm_r(output_folder) if File.directory?(output_folder)
-      FileUtils.unlink(output_folder) if File.symlink?(output_folder)
+      FileUtils.rm(output_folder) if File.symlink?(output_folder)
       
       if DEBUG_MODE==mode
         FileUtils.symlink(File.expand_path(source_folder), output_folder)

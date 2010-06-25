@@ -38,7 +38,7 @@ module Distil
         base_cmd = "git pull #{uri}"
         base_cmd+= " -q"
         # base_cmd += " -q" if options[:quiet] and not $verbose
-        base_cmd += " #{options[:version]}" if options[:version]
+        base_cmd += " #{options["version"]}" if options["version"]
         # puts base_cmd if $verbose
         if system(base_cmd)
           # puts "removing: .git .gitignore" if $verbose

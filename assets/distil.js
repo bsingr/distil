@@ -103,7 +103,8 @@
     tag.onload= complete;
     tag.type= "text/javascript";
     tag.src= url;
-    root.insertBefore(tag, root.firstChild);
+    // root.insertBefore(tag, root.firstChild);
+    head.appendChild(tag);
   };
 
   var injectStylesheet= distil.injectStylesheet= function(url, callback, scope, userData)

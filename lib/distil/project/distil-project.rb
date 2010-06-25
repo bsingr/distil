@@ -122,6 +122,23 @@ module Distil
         target.build
       }
     end
+
+    def find_file(file, source_file=nil)
+      return nil if external_projects.nil?
+      
+      parts= file.split(File::SEPARATOR)
+      project_name= parts[0]
+
+      external_project= external_project_with_name(project_name)
+      return nil if !external_project
+
+      if 1==parts.length
+        return SourceFile::from_path(external_project.product_name(:import, source_file.extension))
+      else
+        return SourceFile::from_path(File.join(external_project.output_folder, *parts[1..-1]))
+      end
+    end
+    
   end
   
 end  
