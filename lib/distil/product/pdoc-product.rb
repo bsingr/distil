@@ -36,7 +36,7 @@ module Distil
       PDoc.run({
         :source_files => doc_files,
         :destination => doc_folder,
-        :generator => PDoc::Generators::Pythonesque,
+        # :generator => PDoc::Generators::Pythonesque,
         :index_page => 'README.markdown',
         # :syntax_highlighter => syntax_highlighter,
         # :markdown_parser => :bluecloth,
