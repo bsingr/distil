@@ -2,7 +2,7 @@ module Distil
   
   class DistilProject < Project
     
-    attr_reader :project_file
+    attr_reader :project_file, :targets
 
     option :ignore_warnings, false
 
@@ -11,38 +11,38 @@ module Distil
   
   
     def initialize(project_file, settings={}, parent=nil)
-      @project_file= File.expand_path(project_file)
-      @projects_by_name={}
-
-      project_info= YAML.load_file(@project_file)
-      project_info.merge!(settings)
-      project_info["path"]= File.dirname(@project_file)
       
       begin
 
+        @project_file= File.expand_path(project_file)
+        @projects_by_name={}
+
+        project_info= YAML.load_file(@project_file)
+        project_info.merge!(settings)
+        project_info["path"]= File.dirname(@project_file)
+
         super(project_info, parent)
         load_external_projects
+
+        FileUtils.mkdir_p(output_folder)
+
+        @targets= []
+        target_list= @extras['targets']
+      
+        if !target_list
+          @targets << Target.new(@extras.clone, self)
+          return @targets
+        end
+
+        @targets= target_list.map { |target|
+          Target.new(target, self)
+        }
 
       rescue ValidationError => err
         puts "#{APP_NAME}: #{SourceFile.path_relative_to_folder(project_file, Dir.pwd)}: #{err.message}\n"
         exit 1
       end
-    end
-
-    def targets
-      @targets if @targets
       
-      @targets= []
-      target_list= @extras['targets']
-      
-      if !target_list
-        @targets << Target.new(@extras.clone, self)
-        return @targets
-      end
-
-      @targets= target_list.map { |target|
-        Target.new(target, self)
-      }
     end
 
     def load_external_projects
@@ -114,7 +114,9 @@ module Distil
     end
 
     def up_to_date
-      targets.all? { |target| target.up_to_date }
+      targets
+      return false if !external_projects.all?{ |project| project.up_to_date }
+      return targets.all? { |target| target.up_to_date }
     end
     
     def build_targets

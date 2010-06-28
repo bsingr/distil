@@ -136,7 +136,6 @@ module Distil
     end
   
     def dependencies
-      content
       @dependencies
     end
 
@@ -146,7 +145,6 @@ module Distil
     end
   
     def assets
-      content
       @assets
     end
   

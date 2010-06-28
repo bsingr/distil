@@ -11,6 +11,10 @@ module Distil
     option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
     option :force
     
+    def up_to_date
+      true
+    end
+    
     def build
     end
 

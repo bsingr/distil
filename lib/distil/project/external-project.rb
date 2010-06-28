@@ -28,6 +28,11 @@ module Distil
       Interpolated.value_of(name, info)
     end
     
+    def up_to_date
+      build
+      true
+    end
+    
     def build
       wd= Dir.getwd
       Dir.chdir(path)
