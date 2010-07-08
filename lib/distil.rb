@@ -34,6 +34,14 @@ def exist?(path, file)
   File.file?(File.join(path, file))
 end
 
+class String
+  def as_identifier
+    word= self.to_s.gsub(/(?:^|\W)(.)/) { $1.upcase }
+    word[0..0].downcase + word[1..-1]
+  end
+end
+
+
 module Distil
   
   FRAMEWORK_TYPE = "framework"

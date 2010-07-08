@@ -27,7 +27,7 @@ class Configurable
     keys= @@options.keys
     values= @@options.map { |k,v| convert_type(v[:type], v[:value]) }
   
-    s= Struct.new(*keys).new(*values)
+    s= @options ? @options : (@options=Struct.new(*keys).new(*values))
     return s if !settings
   
     setting_keys= settings.keys.map { |key| key.to_s }
@@ -61,6 +61,7 @@ class Configurable
 
     }
 
+    @extras.merge!(settings)
     s
   end
 
@@ -125,11 +126,11 @@ class Configurable
   end
 
   def initialize(options={}, parent=nil)
+    @extras= Hash.new
     if (parent.is_a?(Configurable))
       parent_options= parent.options
     end
-    @options= get_options(options, parent_options)
-    @extras= options
+    get_options(options, parent_options)
   end
   
   private

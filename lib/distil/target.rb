@@ -41,7 +41,7 @@ module Distil
         self.exclude_files= FileSet.new
       end
 
-      @options.global_export=name if true==global_export
+      @options.global_export=name.as_identifier if true==global_export
 
       projects= []
       include_projects.each { |name|
@@ -165,6 +165,8 @@ module Distil
         product_folder= File.join(project.output_folder, f)
         
         next if File.exists?(product_folder)
+        FileUtils.rm product_folder if File.symlink?(product_folder)
+        
         File.symlink src_folder, product_folder
       }
     end
@@ -206,9 +208,7 @@ module Distil
 
       if !up_to_date
         tasks.each { |t| t.process_files(files) }
-      
         products.each { |p| p.write_output }
-      
         build_assets
       end
       
@@ -216,19 +216,7 @@ module Distil
     end
     
     def find_file(file, source_file=nil)
-      return nil if project.external_projects.nil?
-      
-      parts= file.split(File::SEPARATOR)
-      project_name= parts[0]
-
-      external_project= project.external_project_with_name(project_name)
-      return nil if !external_project
-
-      if 1==parts.length
-        return SourceFile::from_path(external_project.product_name(:import, source_file.extension))
-      else
-        return SourceFile::from_path(File.join(external_project.source_folder, *parts[1..-1]))
-      end
+      project.find_file(file, source_file)
     end
     
     def get_content_for_file(file)

@@ -7,7 +7,7 @@ module Distil
     
     option :global_export
     option :additional_globals, [], :aliases=>['globals']
-
+    
     def before_externals(f)
       f.puts("/*#nocode+*/")
       f.puts(bootstrap_source) if bootstrap
@@ -80,6 +80,7 @@ EOS
     extension "js"
 
     option :global_export
+    option :synchronous_load, false, :aliases=>['sync']
   
     def write_output
       return if up_to_date
@@ -114,7 +115,7 @@ EOS
           f.write("/*jsl:import #{relative_path(file)}*/\n")
         }
         f.write(<<-EOS)
-//distil.debug= true;
+distil.sync= #{synchronous_load ? 'true' : 'false'};
 
 distil.module('#{target.name}', {
   folder: '',

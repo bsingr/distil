@@ -20,12 +20,11 @@ ARGV.each { |v|
   end
   
   v= v.gsub(/^-+/, '')
-  v.gsub!("-", "_")
   
   key,value= v.split("=")
-  if (!value)
-    value= true
-  end
+  key.gsub!("-", "_")
+  
+  value=true if !value
   
   if ("f"==key || "file"==key || "buildfile"==key)
     project_file= value

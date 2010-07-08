@@ -18,26 +18,17 @@ module Distil
         @projects_by_name={}
 
         project_info= YAML.load_file(@project_file)
-        project_info.merge!(settings)
         project_info["path"]= File.dirname(@project_file)
 
         super(project_info, parent)
-        load_external_projects
+        get_options(settings, parent)
 
         FileUtils.mkdir_p(output_folder)
 
-        @targets= []
-        target_list= @extras['targets']
-      
-        if !target_list
-          @targets << Target.new(@extras.clone, self)
-          return @targets
-        end
-
-        @targets= target_list.map { |target|
-          Target.new(target, self)
-        }
-
+        load_external_projects
+        find_targets
+        load_distileries
+        
       rescue ValidationError => err
         puts "#{APP_NAME}: #{SourceFile.path_relative_to_folder(project_file, Dir.pwd)}: #{err.message}\n"
         exit 1
@@ -45,6 +36,20 @@ module Distil
       
     end
 
+    def find_targets
+      @targets= []
+      target_list= @extras['targets']
+    
+      if !target_list
+        @targets << Target.new(@extras.clone, self)
+        return @targets
+      end
+
+      @targets= target_list.map { |target|
+        Target.new(target, self)
+      }
+    end
+    
     def load_external_projects
       return if !external_projects
       projects= []
@@ -82,14 +87,6 @@ module Distil
       server.start
     end
     
-    def build
-      FileUtils.mkdir_p(output_folder)
-      load_distileries
-      targets
-      build_external_projects
-      build_targets
-    end
-
     def load_distileries
       return if distileries.nil?
     
@@ -106,19 +103,23 @@ module Distil
         require path
       }
     end
-  
+
+    def up_to_date
+      return false if !external_projects.all?{ |project| project.up_to_date }
+      return targets.all? { |target| target.up_to_date }
+    end
+
+    def build
+      build_external_projects
+      build_targets
+    end
+
     def build_external_projects
       external_projects.each { |project|
         project.build
       }
     end
 
-    def up_to_date
-      targets
-      return false if !external_projects.all?{ |project| project.up_to_date }
-      return targets.all? { |target| target.up_to_date }
-    end
-    
     def build_targets
       targets.each { |target|
         target.build

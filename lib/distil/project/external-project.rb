@@ -19,7 +19,7 @@ module Distil
       end
       super(config, parent)
       
-      @options.output_folder= File.join(parent.output_folder, name)
+      self.output_folder= File.join(parent.output_folder, name)
     end
 
     def product_name(product_type, extension)

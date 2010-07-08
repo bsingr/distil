@@ -246,7 +246,13 @@
     var path= module.path;
     
     for (var i=0, len=files.length; i<len; ++i)
-      loadResource(path + files[i], null, null, null, resource);
+    {
+      // loadResource(path + files[i], null, null, null, resource);
+      if (distil.sync && '.js'===files[i].slice(-3).toLowerCase())
+        document.write('<script src="'+path+files[i]+'"></script>');
+      else
+        loadResource(path + files[i], null, null, null, resource);
+    }
   };
   
   distil.module= function(name, def)
