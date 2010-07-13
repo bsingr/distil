@@ -167,7 +167,7 @@ module Distil
         next if File.exists?(product_folder)
         FileUtils.rm product_folder if File.symlink?(product_folder)
         
-        File.symlink src_folder, product_folder
+        File.symlink SourceFile.path_relative_to_folder(src_folder, project.output_folder), product_folder
       }
     end
   

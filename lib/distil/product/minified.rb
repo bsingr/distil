@@ -17,7 +17,7 @@ module Distil
       @up_to_date= true
       
     	# Run the Y!UI Compressor
-    	system "java -jar #{COMPRESSOR} #{concatenated_name} -o #{filename}"
+    	system "java -jar #{COMPRESSOR} \"#{concatenated_name}\" -o \"#{filename}\""
     	
     	if 'css'==extension
     		buffer= File.read(filename)

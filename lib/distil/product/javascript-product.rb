@@ -114,8 +114,12 @@ EOS
         files.each { |file|
           f.write("/*jsl:import #{relative_path(file)}*/\n")
         }
+        
+        if (APP_TYPE==target.target_type)
+          f.puts "distil.sync= #{Kernel::Boolean(synchronous_load)};"
+        end
+        
         f.write(<<-EOS)
-distil.sync= #{synchronous_load ? 'true' : 'false'};
 
 distil.module('#{target.name}', {
   folder: '',

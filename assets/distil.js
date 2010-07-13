@@ -267,7 +267,15 @@
       return;
     }
 
-    def.path= currentResource.path + def.folder;
+    if (distil.sync)
+    {
+      var url= getRunningScriptSource();
+      var lastSlash= url.lastIndexOf('/');
+      def.path= url.substring(0,lastSlash+1) + def.folder;
+    }
+    else
+      def.path= currentResource.path + def.folder;
+      
     if ('/'!==def.path.slice(-1))
       def.path+='/';
       

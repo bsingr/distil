@@ -18,7 +18,7 @@ module Distil
         config["source_folder"]= "build/$(mode)"
       end
       super(config, parent)
-      
+
       self.output_folder= File.join(parent.output_folder, name)
     end
 
@@ -47,7 +47,7 @@ module Distil
       FileUtils.rm(output_folder) if File.symlink?(output_folder)
       
       if DEBUG_MODE==mode
-        FileUtils.symlink(File.expand_path(source_folder), output_folder)
+        FileUtils.symlink(SourceFile.path_relative_to_folder(File.expand_path(source_folder), File.dirname(output_folder)), output_folder)
       else
         FileUtils.cp_r(File.expand_path(source_folder), output_folder)
       end
