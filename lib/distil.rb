@@ -39,6 +39,10 @@ class String
     word= self.to_s.gsub(/(?:^|\W)(.)/) { $1.upcase }
     word[0..0].downcase + word[1..-1]
   end
+  def starts_with?(prefix)
+    prefix = prefix.to_s
+    self[0, prefix.length] == prefix
+  end
 end
 
 

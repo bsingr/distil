@@ -141,33 +141,29 @@ module Distil
       assets.each { |a|
         path= a.file_path || a.relative_to_folder(source_folder)
 
+        next if File.expand_path(path).starts_with?(project.output_folder)
+        
         parts= File.dirname(path).split(File::SEPARATOR)
         if ('.'==parts[0])
-          product_path= File.join(output_folder, path)
+          product_path= File.join(project.output_folder, path)
           FileUtils.rm product_path if File.exists? product_path
-          File.symlink a.relative_to_folder(output_folder), product_path
+          File.symlink a.relative_to_folder(project.output_folder), product_path
           next
         end
 
-        for i in (0..parts.length-1)
-          f= parts[0..i].join(File::SEPARATOR)
-          if !folders.include?(f)
-            folders << f
-          end
-        end
-      
+        folders << parts[0] if !folders.include?(parts[0])
       }
     
-      folders.sort!
-      
       folders.each { |f|
         src_folder= File.join(source_folder, f)
         product_folder= File.join(project.output_folder, f)
+
+        relative_folder= SourceFile.path_relative_to_folder(src_folder, project.output_folder)
         
-        next if File.exists?(product_folder)
         FileUtils.rm product_folder if File.symlink?(product_folder)
+        next if File.directory?(product_folder)
         
-        File.symlink SourceFile.path_relative_to_folder(src_folder, project.output_folder), product_folder
+        File.symlink relative_folder, product_folder
       }
     end
   
