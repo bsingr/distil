@@ -139,10 +139,10 @@ module Distil
       folders= []
 
       assets.each { |a|
-        path= a.file_path || a.relative_to_folder(source_folder)
 
-        next if File.expand_path(path).starts_with?(project.output_folder)
-        
+        next if (a.full_path).starts_with?(project.output_folder)
+
+        path= a.file_path || a.relative_to_folder(source_folder)
         parts= File.dirname(path).split(File::SEPARATOR)
         if ('.'==parts[0])
           product_path= File.join(project.output_folder, path)
