@@ -18,6 +18,9 @@ module Distil
     def build
     end
 
+    def clean
+    end
+    
     def self.fetch_project_using_git(options = {})
       uri= options["repository"]
       path= options["path"]

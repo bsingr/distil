@@ -109,6 +109,13 @@ module Distil
       return targets.all? { |target| target.up_to_date }
     end
 
+    def clean
+      # clean_external_projects
+      targets.each { |target|
+        target.clean
+      }
+    end
+    
     def build
       build_external_projects
       build_targets

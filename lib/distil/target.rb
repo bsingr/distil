@@ -3,7 +3,7 @@ module Distil
   class Target < Configurable
     include ErrorReporter
     
-    attr_accessor :project, :assets
+    attr_accessor :project, :assets, :file_aliases
     
     option :version, String
     option :name, String
@@ -32,6 +32,7 @@ module Distil
       @probed= Set.new
       @contents= {}
       @asset_aliases= {}
+      @file_aliases= {}
       
       if !include_files
         self.include_files= FileSet.new
@@ -135,6 +136,10 @@ module Distil
       @files
     end
 
+    def add_file_alias(original, full_path)
+      @file_aliases[original]= full_path
+    end
+    
     def symlink_assets
       folders= []
 
@@ -197,6 +202,11 @@ module Distil
     
     def up_to_date
       products.all? { |p| p.up_to_date }
+    end
+    
+    def clean
+      puts "\n#{name}:\n\n"
+      products.each { |p| p.clean }
     end
     
     def build

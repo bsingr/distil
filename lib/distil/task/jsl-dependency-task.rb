@@ -28,6 +28,7 @@ module Distil
           else
             dependency= target.find_file($1, file)
             if (dependency)
+              target.add_file_alias($1, dependency.full_path)
               file.add_dependency dependency
             else
               file.error "Missing import file: #{$1}", line_num

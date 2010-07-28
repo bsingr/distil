@@ -40,20 +40,17 @@ module Distil
       #   tmp << "+define #{g}\n"
       # }
       
-      # add aliases
-      target.project.external_projects.each { |project|
-        import_file= project.product_name(:import, 'js')
-        next if !File.exist?(import_file)
-        tmp << "+alias #{project.name} #{import_file}\n"
+      target.file_aliases.each { |original, full_path|
+        next if !File.exist?(full_path)
+        tmp << "+alias #{original} #{full_path}\n"
       }
-    
+      
       files.each { |f|
         next if !handles_file(f)
         tmp << "+process #{f}\n"
       }
 
       tmp.close()
-
       command= "#{LINT_COMMAND} -nologo -nofilelisting -conf #{tmp.path}"
 
       stdin, stdout, stderr= Open3.popen3(command)

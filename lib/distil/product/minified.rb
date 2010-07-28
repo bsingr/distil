@@ -17,7 +17,16 @@ module Distil
       @up_to_date= true
       
     	# Run the Y!UI Compressor
-    	system "java -jar #{COMPRESSOR} \"#{concatenated_name}\" -o \"#{filename}\""
+    	if (!File.exist?(concatenated_name))
+    	  error("Missing source file for minify: #{concatenated_name}")
+    	  return
+  	  end
+  	  
+    	result= system "java -jar #{COMPRESSOR} \"#{concatenated_name}\" -o \"#{filename}\""
+    	if (!result)
+    	  error("Failed to minify: #{concatenated_name}")
+    	  return
+  	  end
     	
     	if 'css'==extension
     		buffer= File.read(filename)

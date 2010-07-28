@@ -7,6 +7,8 @@ module Distil
     option :compressed_name, OutputPath, "$(name).$(extension).gz", :aliases=>['compressed']
 
     option :force, false
+
+    include ErrorReporter
     
     attr_accessor :assets, :target, :join_string
     class_attr :extension
@@ -73,6 +75,10 @@ module Distil
     
     def write_output
       raise NotImplementedError.new("No write_output method has been defined for this product.")
+    end
+    
+    def clean
+      FileUtils.rm filename if File.exist? filename
     end
     
     def relative_path(file)
