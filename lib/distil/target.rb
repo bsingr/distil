@@ -47,6 +47,10 @@ module Distil
       projects= []
       include_projects.each { |name|
         ext= project.external_project_with_name(name)
+        if (!ext)
+          raise ValidationError, "External project not found: #{name}"
+        end
+        
         ext.linkage= STRONG_LINKAGE
         projects << ext
       }

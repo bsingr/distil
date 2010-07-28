@@ -19,7 +19,11 @@ module Distil
       
       if !File.exist?(@source_path)
         FileUtils.mkdir_p(source_folder)
-        text= href.read
+        begin
+          text= href.read
+        rescue OpenURI::HTTPError => http_error
+          raise ValidationError, "Unable to fetch remote project: status=#{http_error.io.status[0]} url=#{href}"
+        end
         File.open(@source_path, "w") { |output|
           output.write text
         }

@@ -4,6 +4,8 @@ module Distil
     @@warning_count=0
     @@error_count=0
     @@ignore_warnings= false
+    @@total_warning_count=0
+    @@total_error_count=0
     
     def ignore_warnings
       @@ignore_warnings
@@ -11,6 +13,14 @@ module Distil
     
     def ignore_warnings=(ignore)
       @@ignore_warnings=ignore
+    end
+    
+    def total_error_count
+      @@total_error_count
+    end
+    
+    def total_warning_count
+      @@total_warning_count
     end
     
     def self.error(message, file=nil, line_number=nil)
@@ -54,6 +64,8 @@ module Distil
     def report
       puts "\n" if (@@error_count>0 || @@warning_count>0)
       puts "#{@@error_count} error(s), #{@@warning_count} warning(s)#{ignore_warnings ? " ignored" : ""}"
+      @@total_error_count += @@error_count
+      @@total_warning_count += @@warning_count
       @@error_count=0
       @@warning_count=0
     end

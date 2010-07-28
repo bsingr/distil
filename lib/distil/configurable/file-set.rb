@@ -69,8 +69,7 @@ module Distil
       # file not found by globbing (would also find explicit reference)
       source_file= @owner.find_file(file) if @owner
       if !source_file
-        puts "full_path=#{full_path}\nsource_folder=#{@owner.source_folder}"
-        error("Unable to locate file: #{file}")
+        error("File not found: #{file}")
         return
       end
       return if (@files.include?(source_file))

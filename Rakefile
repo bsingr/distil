@@ -14,6 +14,7 @@ begin
     gemspec.executables= ['distil']
     gemspec.extensions= ['vendor/extconf.rb']
     gemspec.add_dependency('json', '>= 1.4.3')
+    gemspec.add_dependency('rubyzip', '>=0.9.4')
   end
 
   Jeweler::GemcutterTasks.new

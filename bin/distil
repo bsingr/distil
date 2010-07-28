@@ -65,4 +65,6 @@ end
 
 args.each { |cmd|
   project.send cmd
+  exit 1 if project.total_error_count > 0
+  exit 1 if project.warnings_are_errors && project.total_warning_count > 0
 }

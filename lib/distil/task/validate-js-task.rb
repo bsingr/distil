@@ -36,9 +36,9 @@ module Distil
         tmp << "+define #{global_export}\n"
       end
       
-      # additional_globals.each { |g|
-      #   tmp << "+define #{g}\n"
-      # }
+      additional_globals.each { |g|
+        tmp << "+define #{g}\n"
+      }
       
       target.file_aliases.each { |original, full_path|
         next if !File.exist?(full_path)
@@ -64,15 +64,15 @@ module Distil
       summary= output.pop
       match= summary.match(/(\d+)\s+error\(s\), (\d+)\s+warning\(s\)/)
       if (match)
-          @@error_count+= match[1].to_i
-          @@warning_count+= match[2].to_i
+        @@error_count+= match[1].to_i
+        @@warning_count+= match[2].to_i
       end
     
       output= output.join("\n")
     
       if (!output.empty?)
-          puts output
-          puts
+        puts output
+        puts
       end
 
     end

@@ -5,7 +5,7 @@ module Distil
     attr_reader :project_file, :targets
 
     option :ignore_warnings, false
-
+    option :warnings_are_errors, false
     option :external_projects, [], :aliases=>['external']
     option :distileries, Array, :aliases=>['distilleries', 'distilery', 'distillery']
   
