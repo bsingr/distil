@@ -3,6 +3,11 @@ module Distil
   LINT_COMMAND= "#{VENDOR_DIR}/jsl-0.3.0/bin/jsl"
   # LINT_COMMAND= "/Users/jeff/.gem/ruby/1.8/gems/distil-0.10.2/vendor/jsl-0.3.0/bin/jsl"
   
+  JS_GLOBALS= Set.new ['Array', 'Boolean', 'Date', 'Error', 'EvalError',
+                       'Function', 'Math', 'Number', 'Object', 'RangeError',
+                       'ReferenceError', 'RegExp', 'String', 'SyntaxError',
+                       'TypeError', 'URIError']
+                       
   class ValidateJsTask < Task
 
     include ErrorReporter
@@ -37,6 +42,7 @@ module Distil
       end
       
       additional_globals.each { |g|
+        next if JS_GLOBALS.include?(g)
         tmp << "+define #{g}\n"
       }
       

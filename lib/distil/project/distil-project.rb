@@ -143,7 +143,7 @@ module Distil
       return nil if !external_project
 
       if 1==parts.length
-        return SourceFile::from_path(external_project.product_name(:import, source_file.extension))
+        return SourceFile::from_path(external_project.product_name(:import, source_file.content_type))
       else
         return SourceFile::from_path(File.join(external_project.output_folder, *parts[1..-1]))
       end
