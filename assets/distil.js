@@ -284,7 +284,27 @@
     
     if (!distil.mainModule)
       distil.mainModule= def;
+    else
+    {
+      //  @HACK: This makes resources work in secondary bundles
+      var key;
+      var value;
+      var main= distil.mainModule;
       
+      for (key in def.assets||{})
+      {
+        if (key in main.assets)
+          continue;
+        main.assets[key]= def.assets[key];
+      }
+      for (key in def.asset_map||{})
+      {
+        if (key in main.asset_map)
+          continue;
+        main.asset_map[key]= def.asset_map[key];
+      }
+    }
+    
     moduleIndex[name]= def;
     if (def.required && def.required.length)
       distil.require(name);
