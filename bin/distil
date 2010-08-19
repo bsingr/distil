@@ -1,11 +1,14 @@
 #!/usr/bin/env ruby
+module Distil
+  
+  LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
+  VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
+  ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
+  APP_NAME= File.basename($0)
 
-LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
-VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
-ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
-APP_NAME= File.basename($0)
+  $:.unshift(LIB_DIR)
 
-$:.unshift(LIB_DIR)
+end
 
 require "distil"
 
@@ -18,35 +21,35 @@ ARGV.each { |v|
     args << v
     next
   end
-  
+
   v= v.gsub(/^-+/, '')
-  
+
   key,value= v.split("=")
   key.gsub!("-", "_")
-  
+
   value=true if !value
-  
+
   if ("f"==key || "file"==key || "buildfile"==key)
     project_file= value
     next
   end
-  
+
   arg_settings[key]= value
 }
 
 def find_project_file(dir=nil)
   dir ||= Dir.pwd
-  
+
   while dir.length > 1
     Dir.glob(File.join(dir, '*.jsproj')) { |file|
       return file if File.basename(dir)===File.basename(file, '.jsproj')
     }
     dir = File.dirname(dir)
   end
-  
+
 end
 
-  
+
 # Change working directory to the folder containing the build YML file.
 project_file||= find_project_file
 

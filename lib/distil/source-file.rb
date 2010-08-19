@@ -1,9 +1,7 @@
 require 'fileutils'
 
-$compressor = File.expand_path("#{VENDOR_DIR}/yuicompressor-2.4.2.jar")
-
 module Distil
-  
+
   class SourceFile
     attr_accessor :parent_folder, :full_path
     class_attr :extension
@@ -100,7 +98,7 @@ module Distil
       return source if !content_type
     	buffer= ""
     
-    	IO.popen("java -jar #{$compressor} --type #{content_type}", "r+") { |pipe|
+    	IO.popen("java -jar #{COMPRESSOR} --type #{content_type}", "r+") { |pipe|
     	  pipe.puts(source)
     	  pipe.close_write
     	  buffer= pipe.read
@@ -165,6 +163,6 @@ module Distil
 end
 
 # load all the other file types
-Dir.glob("#{LIB_DIR}/distil/source-file/*-file.rb") { |file|
+Dir.glob("#{Distil::LIB_DIR}/distil/source-file/*-file.rb") { |file|
   require file
 }

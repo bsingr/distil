@@ -1,0 +1,64 @@
+<% d = @doc_instance %>
+
+<%= include "partials/title", :object => @doc_instance %>
+
+<% if d.description && !d.description.empty? %>
+  <%= layout_section('Description') %>
+    <%= htmlize(d.description) %>
+  <%= end_layout_section %>
+<% end %>
+
+<%= include "partials/namespaces", :object => @doc_instance %>
+<%= include "partials/classes", :object => @doc_instance %>
+
+<%= include "partials/class_relationships", :object => @doc_instance %>
+<%= include "partials/related_utilities",   :object => @doc_instance %>
+
+<% if @doc_instance.respond_to?(:constructor) && @doc_instance.constructor %>
+  <%= layout_section('Constructor') %>
+  <% m= @doc_instance.constructor %>
+    <h4><%= m.full_name %></h4>
+    <% if m.respond_to?(:signatures) %>
+      <%= include "partials/method_signatures", :object => m %>
+    <% else %>
+      <pre class="syntax"><code class="ebnf"><%= m.signature.name %> &rarr; <%= auto_link_types(m.signature.return_value, :name => :long).join(' | ') %></code></pre>
+    <% end %>
+
+    <%= htmlize(m.description) %>
+    <%= include "partials/relationships", :object => m %>
+    <%= include "partials/methodized_note", :object => m %>
+  <%= end_layout_section %>
+<% end %>
+
+
+<%
+types = [
+  [:class_methods, 'Class methods'],
+  [:class_properties, 'Class properties'],
+  [:instance_methods, 'Instance methods'],
+  [:instance_properties, 'Instance properties'],
+  [:constants, 'Constants']
+].each do |a| %>
+  <% method, title = a %>
+  <% methods = @doc_instance.send(method) %>
+  <% unless methods.empty? %>
+    <%= layout_section(title, method) %>
+      <ul class="method-list">
+        <% methods.each do |m| %>
+          <li>
+            <h4><%= m.full_name %></h4>
+            <% if m.respond_to?(:signatures) %>
+              <%= include "partials/method_signatures", :object => m %>
+            <% else %>
+              <pre class="syntax"><code class="ebnf"><%= m.signature.name %> &rarr; <%= auto_link_types(m.signature.return_value, :name => :long).join(' | ') %></code></pre>
+            <% end %>
+
+            <%= htmlize(m.description) %>
+            <%= include "partials/relationships", :object => m %>
+            <%= include "partials/methodized_note", :object => m %>
+          </li>
+        <% end %>
+      </ul>
+    <%= end_layout_section %>
+  <% end %>
+<% end %>

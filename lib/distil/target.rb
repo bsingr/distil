@@ -16,7 +16,7 @@ module Distil
     option :include_projects, [], :aliases=>['include']
     
     option :validate, true
-    option :generate_docs, false
+    option :generate_docs, nil
 
     option :minify, true
     option :compress, true
@@ -75,7 +75,11 @@ module Distil
       end
 
       if generate_docs
-        product_types << JavascriptDocProduct
+        if ('pdoc'==generate_docs)
+          product_types << PDocProduct
+        else
+          product_types << JavascriptDocProduct
+        end
       end
       
       @products=[]

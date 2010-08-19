@@ -45,6 +45,6 @@ module Distil
 end
 
 # load all the other task types
-Dir.glob("#{LIB_DIR}/distil/task/*-task.rb") { |file|
+Dir.glob("#{Distil::LIB_DIR}/distil/task/*-task.rb") { |file|
   require file
 }

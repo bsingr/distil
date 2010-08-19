@@ -155,6 +155,7 @@ class Configurable
       if type.respond_to?(:from_options)
         type.from_options(value, self)
       else
+        puts "type=#{type} value=#{value}"
         type.new(value)
       end
     end

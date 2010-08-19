@@ -46,20 +46,6 @@ class String
 end
 
 
-module Distil
-  
-  FRAMEWORK_TYPE = "framework"
-  APP_TYPE = "application"
-  
-  WEAK_LINKAGE = 'weak'
-  STRONG_LINKAGE = 'strong'
-  LAZY_LINKAGE = 'lazy'
-  
-  DEBUG_MODE = 'debug'
-  RELEASE_MODE = 'release'
-  
-end
-
 #  Do a simple token substitution. Tokens begin and end with @.
 def replace_tokens(string, params)
 	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
@@ -72,6 +58,20 @@ def replace_tokens(string, params)
 			value
 		end
 	}
+end
+
+module Distil
+
+  FRAMEWORK_TYPE = "framework"
+  APP_TYPE = "application"
+
+  WEAK_LINKAGE = 'weak'
+  STRONG_LINKAGE = 'strong'
+  LAZY_LINKAGE = 'lazy'
+
+  DEBUG_MODE = 'debug'
+  RELEASE_MODE = 'release'
+
 end
 
 require 'distil/browser'

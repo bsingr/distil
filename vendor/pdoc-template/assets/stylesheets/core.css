@@ -1,0 +1,80 @@
+/* The "section" class implicitly needs a clearfix; adding it here for convenience. */
+
+.clearfix:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
+}
+
+* html .clearfix {
+    height: 1%;
+}
+
+body {
+  font-family: Verdana, sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  margin: 1em;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  font-size: 28px;
+  margin-top: 16px;
+}
+
+h2 {
+  font-size: 24px;
+  margin-top: 20px;
+}
+
+h3 {
+  font-size: 20px;
+  margin-top: 24px;
+}
+
+h4 {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+pre {
+ white-space: pre-wrap;       /* CSS 3                  */
+ white-space: -moz-pre-wrap;  /* Mozilla, since 1999    */
+ white-space: -pre-wrap;      /* Opera 4-6              */
+ white-space: -o-pre-wrap;    /* Opera 7                */
+ word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+.breadcrumbs li
+{
+  display: inline-block;
+}
+
+.method-list > li
+{
+  margin-top: 22px;
+}
+
+.section-constructor h4
+{
+  margin-top: 22px;
+}
+
+#footer
+{
+  margin-top: 44px;
+}
+
+.argument-list
+{
+  margin-left: 1em;
+}
+
