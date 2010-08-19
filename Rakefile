@@ -25,6 +25,18 @@ rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install jeweler"
 end
 
+namespace :git do
+  namespace :submodules do
+    desc "Initialize git submodules"
+    task :init do
+      system "git submodule init"
+      system "git submodule update"
+    end
+  end
+end
+
+task :build => :git:submodules
+
 task :default => [ :build ] do
     puts "generated latest version"
 end
