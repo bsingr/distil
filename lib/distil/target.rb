@@ -121,7 +121,6 @@ module Distil
       @probed << file
 
       tasks.each { |t| t.include_file(file) }
-      
       file.dependencies.each { |d| include_file(d) }
       @assets.merge(file.assets)
       @assets << file

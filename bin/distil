@@ -40,6 +40,11 @@ ARGV.each { |v|
 def find_project_file(dir=nil)
   dir ||= Dir.pwd
 
+  immediate_projects= Dir.glob(File.join(dir, "*.jsproj"))
+  if (!immediate_projects.empty? && 1==immediate_projects.length)
+    return immediate_projects[0]
+  end
+  
   while dir.length > 1
     Dir.glob(File.join(dir, '*.jsproj')) { |file|
       return file if File.basename(dir)===File.basename(file, '.jsproj')
@@ -54,7 +59,7 @@ end
 project_file||= find_project_file
 
 if !project_file
-  puts "#{APP_NAME}: can't find project file"
+  puts "#{Distil::APP_NAME}: can't find project file"
   exit
 end
 

@@ -78,3 +78,7 @@ pre {
   margin-left: 1em;
 }
 
+.menu-items li > ul
+{
+  margin-left: 1em;
+}

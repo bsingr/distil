@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>lib/distil/product/pdoc-product.rb</string>
+	<string>lib/distil/target.rb</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -21,14 +21,14 @@
 	<integer>270</integer>
 	<key>metaData</key>
 	<dict>
-		<key>lib/distil/product/pdoc-product.rb</key>
+		<key>lib/distil/target.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>55</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>6</integer>
+				<integer>0</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -38,11 +38,11 @@
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>lib/distil/product/pdoc-product.rb</string>
+		<string>lib/distil/target.rb</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>
 	<key>windowFrame</key>
-	<string>{{351, 0}, {1089, 878}}</string>
+	<string>{{831, 300}, {1089, 878}}</string>
 </dict>
 </plist>
