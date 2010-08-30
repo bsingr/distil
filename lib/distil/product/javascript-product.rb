@@ -23,7 +23,8 @@ module Distil
         asset_map= []
         assets.each { |a|
           if can_embed_file?(a)
-            content= target.get_content_for_file(a)
+            next if @files.include?(a)
+            content= a.minified_content(target.get_content_for_file(a))
             content= content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
             asset_references << "\"#{target.alias_for_asset(a)}\": \"#{content}\""
           else
