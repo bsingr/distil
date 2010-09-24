@@ -20,6 +20,14 @@ module Distil
 
     def clean
     end
+
+    def svn_url?
+      @uri =~ /svn(?:\+ssh)?:\/\/*/
+    end
+  
+    def git_url?
+      @uri =~ /^git:\/\// || @uri =~ /\.git$/
+    end
     
     def self.fetch_project_using_git(options = {})
       uri= options["repository"]
@@ -86,14 +94,14 @@ module Distil
         return RemoteProject.new(config, parent)
       end
       
-      config["path"]||= "ext/#{config["name"]}"
+      config["path"] ||= "ext/#{config["name"]}"
 
       if config["repository"] && !File.directory?(config["path"])
         fetch_project_using_git(config)
       end
       
-      config["mode"]||= parent.mode if parent
-        
+      config["mode"] ||= parent.mode if parent
+
       path= config["path"]
       if !path
         ErrorReporter.error "No path for project: #{config["name"]}"

@@ -27,6 +27,12 @@ module Distil
     end
     
     def copy_bootstrap_script
+      sync_name= File.join(target.project.output_folder, "#{File.basename(bootstrap_script, ".js")}-sync.js")
+
+      File.open(sync_name, File::CREAT|File::TRUNC|File::RDWR) { |f|
+        f.puts(bootstrap_source)
+        f.puts("distil.sync=true;")
+      }
       FileUtils.cp bootstrap_script, target.project.output_folder if !bootstrap
     end
     
