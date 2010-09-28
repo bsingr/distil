@@ -5,7 +5,22 @@ require 'fileutils'
 require 'zlib'
 require "open3"
 require 'uri'
+require 'erb'
 require 'open-uri'
+require 'json'
+
+module Distil
+  class ValidationError < StandardError
+  end
+
+  LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
+  VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
+  ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
+  APP_NAME= File.basename($0)
+  
+  COMPRESSOR= File.expand_path("#{VENDOR_DIR}/yuicompressor-2.4.2.jar")
+  
+end
 
 def class_attr(*rest)
   rest.each { |name|
@@ -30,55 +45,12 @@ def class_attr(*rest)
   }
 end
 
-def exist?(path, file)
-  File.file?(File.join(path, file))
-end
-
-class String
-  def as_identifier
-    word= self.to_s.gsub(/(?:^|\W)(.)/) { $1.upcase }
-    word[0..0].downcase + word[1..-1]
-  end
-  def starts_with?(prefix)
-    prefix = prefix.to_s
-    self[0, prefix.length] == prefix
-  end
-end
-
-
-#  Do a simple token substitution. Tokens begin and end with @.
-def replace_tokens(string, params)
-	return string.gsub(/(\n[\t ]*)?@([^@ \t\r\n]*)@/) { |m|
-		key= $2
-		ws= $1
-		value= params[key]||m;
-		if (ws && ws.length)
-			ws + value.split("\n").join(ws);
-		else
-			value
-		end
-	}
-end
-
-module Distil
-
-  FRAMEWORK_TYPE = "framework"
-  APP_TYPE = "application"
-
-  WEAK_LINKAGE = 'weak'
-  STRONG_LINKAGE = 'strong'
-  LAZY_LINKAGE = 'lazy'
-
-  DEBUG_MODE = 'debug'
-  RELEASE_MODE = 'release'
-
-end
-
-require 'distil/browser'
 require 'distil/error-reporter'
+require 'distil/subclass-tracker'
 require 'distil/configurable'
 require 'distil/source-file'
-require 'distil/task'
+require 'distil/file-vendor'
 require 'distil/product'
-require 'distil/target'
 require 'distil/project'
+require 'distil/recursive-http-fetcher'
+require 'distil/remote-asset'

@@ -1,152 +1,241 @@
 module Distil
   
-  class Project < Configurable
-
-    include ErrorReporter
-
-    option :output_folder, ProjectPath, "build/$(mode)", :aliases=>['output']
-    option :source_folder, ProjectPath, ""
-    
-    option :path, String
-    option :mode, DEBUG_MODE, :valid_values=>[DEBUG_MODE, RELEASE_MODE]
-    option :force
-    
-    def up_to_date
-      true
-    end
-    
-    def build
-    end
-
-    def clean
-    end
-
-    def svn_url?
-      @uri =~ /svn(?:\+ssh)?:\/\/*/
-    end
+  BUILD_FILE= 'Buildfile'
+  DEFAULT_OUTPUT_FOLDER= 'build'
   
-    def git_url?
-      @uri =~ /^git:\/\// || @uri =~ /\.git$/
+  class Project < Configurable
+    include ErrorReporter
+    include FileVendor
+    
+    attr_reader :name, :path, :folder, :source_folder, :output_folder, :assets, :asset_aliases, :remote_assets, :include_paths
+    alias_config_key :project_type, :type
+    alias_config_key :source_files, :source
+    alias_config_key :remote_assets, :require
+    
+    def self.default
+      @default ||= find
     end
     
-    def self.fetch_project_using_git(options = {})
-      uri= options["repository"]
-      path= options["path"]
-      
-      begin
-        `git --version 2>/dev/null`
-      rescue
-        nil
-      end
-      if $?.nil? || !$?.success?
-        raise ValidationError.new("The git version control tool is required to pull this repository: #{uri}")
-      end
-      
-      FileUtils.mkdir_p(path)
-      Dir.chdir path do
-        clone_cmd  = "git clone #{uri} ."
-        clone_cmd += " -q"
-        clone_cmd += " #{options["version"]}" if options["version"]
-        if !system(clone_cmd)
-          raise ValidationError.new("Failed to clone external project: #{uri}")
-        end
-      end
+    def self.default=(env)
+      @default = env
     end
     
-    def self.from_config(config, parent=nil)
-
-      if config.is_a?(String)
-        string= config
-        uri= URI.parse(string)
+    def self.find(dir=nil)
+      dir ||= Dir.pwd
+      while dir.length > 1
+        candidates= [BUILD_FILE, "*.jsproj"]
+        # candidates << BUILD_FILE.downcase unless File.identical?(BUILD_FILE, BUILD_FILE.downcase)
         
-        config= { "name" => File.basename(config, ".*") }
+        projects= Dir.glob(File.join(dir, "{#{candidates.join(",")}}"))
+        return new(projects.first) if 1==projects.size
         
-        case
-        when ['.js', '.css'].include?(File.extname(uri.path))
-          config["href"]= uri.to_s
-        when uri.scheme
-          config["repository"]= uri.to_s
-        else
-          config["path"]= uri.to_s
-        
-          full_path= File.expand_path(config["path"])
-        
-          if File.exist?(full_path) && File.file?(full_path)
-            config["path"]= File.dirname(full_path)
-          else
-            config["path"]= full_path
-          end
+        unless 0==projects.size
+          puts "More than one candidate for Project:"
+          projects.each { |e|
+            puts "  #{path_relative_to_folder(e, cwd)}"
+          }
+          exit 1
         end
+        
+        dir= File.dirname(dir)
       end
+      
+      puts "Unable to find Project"
+      exit 1
+    end
+    
+    def initialize(env)
+      @path= env
+      @folder= File.dirname(@path)
+      @source_folder= @folder
+      Dir.chdir(@folder)
+      @output_folder= DEFAULT_OUTPUT_FOLDER
+      @include_paths= [@folder]
+      @source_files= []
+      @ordered_files= []
+      @asset_aliases= {}
+      @assets= Set.new
+      @inspected_files= Set.new
+      @remote_assets=[]
+      @remote_assets_by_name={}
+      yaml= YAML::load_file(@path)
+      from_hash(yaml)
+    end  
 
-      if !config["name"]
-        case when config["repository"]
-          uri= URI.parse(config["repository"])
-          config["name"]= File.basename(uri.path, ".*")
-        when config["path"]
-          config["name"]= File.basename(config["path"], ".*")
+    def remote_assets=(assets)
+      assets.each { |a|
+        asset= RemoteAsset.new(a)
+        asset.build
+        @remote_assets << asset
+        @remote_assets_by_name[asset.name]= asset
+      }
+    end
+    
+    def notice_text
+      @notice_text ||= File.read(@notice)
+    end
+    
+    def products
+      @products unless @products.nil?
+      
+      @products= []
+      Product.subclasses.each { |klass|
+        p= klass.new(self)
+        @products << p unless p.files.empty?
+      }
+      
+      @products
+    end
+    
+    def product_files
+      @product_files unless @product_files.nil?
+      @product_files= []
+      products.each { |p| @product_files.concat(p.files) }
+      @product_files.uniq!
+      @product_files
+    end
+    
+    def add_alias_for_asset(alias_name, asset)
+      if asset_aliases.include?(alias_name)
+        error "Attempt to register asset with the same alias as another asset: #{alias_name}"
+        return
+      end
+      asset_aliases[alias_name]= asset
+    end
+    
+    def source_files
+      @source_files
+    end
+
+    def source_files=(set)
+      @source_files=[]
+      set= set.split(",").map { |f| f.strip } if set.is_a?(String)
+      set.each { |f|
+        add_source_file(f)
+      }
+    end
+    
+    def add_source_file(file)
+      return if file.nil?
+      
+      if @remote_assets_by_name.include?(file)
+        asset= @remote_assets_by_name[file]
+        add_source_file asset.file_for(:js)
+        add_source_file asset.file_for(:css)
+        return
+      end
+      
+      full_path= find_file(file)
+      
+      unless full_path.nil?
+        if File.directory?(full_path)
+          files= Dir.glob(File.join(full_path, "**/*")) { |f|
+            add_source_file(f)
+          }
         else
-          raise ValidationError.new("External project has neither name, path nor repository")
+          f= file_from_path(full_path)
+          @source_files << f unless @source_files.include?(f)
         end
+        return
       end
+      
+      globbed= glob(file)
+    
+      if 0==globbed.length
+        error("File not found #{file}")
+        return
+      end
+      
+      globbed.each { |f|
+        f= file_from_path(f)
+        @source_files << f unless @source_files.include?(f)
+      }
+    end
+    
+    def add_ordered_file(file)
+      return if @ordered_files.include?(file)
+      return unless @source_files.include?(file)
+      return if @inspected_files.include?(file)
+      
+      @inspected_files << file
+      file.dependencies.each { |d|
+        add_ordered_file(d)
+      }
+      @assets.merge(file.assets)
+      @ordered_files << file
+    end
+    
+    def ordered_files
+      @ordered_files unless @ordered_files.empty?
+      source_files.each { |f|
+        add_ordered_file(f)
+      }
+      @ordered_files
+    end
+        
+    def glob(path)
+      return path if File.exists?(path)
+      
+      files= []
+      
+      parts= path.split(File::SEPARATOR)
+      asset_name= parts[0]
+      file_path= File.join(parts.slice(1..-1))
 
-      if config["href"]
-        return RemoteProject.new(config, parent)
+      if (@remote_assets_by_name.include?(asset_name))
+        asset= @remote_assets_by_name[asset_name]
+        return Dir.glob(File.join(asset.include_path, file_path))
       end
       
-      config["path"] ||= "ext/#{config["name"]}"
+      include_paths.each { |i|
+        files.concat(Dir.glob(File.join(i, path)))
+      }
+      return files
+    end
+      
+    def find_file(path, content_type=nil, mode=nil)
+      return path if File.exists?(path)
+      
+      include_paths.each { |i|
+        f= File.join(i, path)
+        return f if File.exists?(f)
+      }
+      
+      # Check remote assets
+      parts= path.split(File::SEPARATOR)
+      asset_name= parts[0]
+      file_path= File.join(parts.slice(1..-1))
 
-      if config["repository"] && !File.directory?(config["path"])
-        fetch_project_using_git(config)
-      end
+      return nil unless @remote_assets_by_name.include?(asset_name)
+      asset= @remote_assets_by_name[asset_name]
       
-      config["mode"] ||= parent.mode if parent
+      return asset.file_for(content_type, mode) if 1==parts.length
+      
+      f= File.join(asset.include_path, file_path)
+      return f if File.exists?(f)
+      
+      nil
+    end
+    
+    def self.path_relative_to_folder(path, folder)
+      path= File.expand_path(path)
+      outputFolder= File.expand_path(folder).to_s
+  
+      # Remove leading slash and split into parts
+      file_parts= path.slice(1..-1).split('/');
+      output_parts= outputFolder.slice(1..-1).split('/');
 
-      path= config["path"]
-      if !path
-        ErrorReporter.error "No path for project: #{config["name"]}"
-        return nil
-      end
-      
-      if !File.directory?(path)
-        ErrorReporter.error "Path is not valid for project: #{config["name"]}"
-        return nil
-      end
-      
-      basename= File.basename(path)
-      
-      case
-      when exist?(path, "#{basename}.jsproj")
-        project_file= File.join(path, "#{basename}.jsproj")
-        project_info= YAML.load_file(project_file)
-        project_info.merge!(config)
-        project_info["path"]= path
-        project= ExternalProject.new(project_info, parent)
-        if parent
-          project.build_command ||= "distil --mode=#{parent.mode} --force=#{parent.force}"
-        else
-          project.build_command ||= "distil"
-        end
-      when exist?(path, "Makefile") || exist?(path, "makefile")
-        project= ExternalProject.new(config, parent)
-        project.build_command ||= "make"
-      when exist?(path, "Rakefile") || exist?(path, "rakefile")
-        project= ExternalProject.new(config, parent)
-        project.build_command ||= "rake"
-      when exist?(path, "Jakefile") || exist?(path, "jakefile")
-        project= ExternalProject.new(config, parent)
-        project.build_command ||= "jake"
-      else
-        ErrorReporter.error "Could not determine type for project: #{config["name"]}"
-      end
-      return project
-      
+      common_prefix_length= 0
+
+      file_parts.each_index { |i|
+        common_prefix_length= i
+        break if file_parts[i]!=output_parts[i]
+      }
+
+      return '../'*(output_parts.length-common_prefix_length) + file_parts[common_prefix_length..-1].join('/')
     end
     
   end
   
+  
 end
-
-require 'distil/project/remote-project'
-require 'distil/project/external-project'
-require 'distil/project/distil-project'

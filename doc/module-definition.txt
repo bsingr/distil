@@ -1,0 +1,35 @@
+distil.module("Foo", {
+
+  /** Other modules which should be loaded before this one. */
+  requires: ['Bar', 'Baz'],
+  
+  /** Files lists individual source files that must be loaded for debug mode,
+      paths are relative to the module js file. */
+  files: ['src/js/foo.js', 'src/js/woop.js', 'src/css/foo.css',
+          'src/nibs/zebra.jsnib/zebra.js',
+          'src/nibs/zebra.jsnib/ZebraController.js'],
+  
+  /** Asset files used by the CSS or JS. */
+  assets: ['src/img/foo.png', 'src/img/background.png',
+           'src/nibs/zebra.jsnib/item.html',
+           'src/nibs/zebra.jsnib/master.html'],
+  
+});
+
+/** >>> File: src/js/foo.js <<< **/
+
+...
+
+/** >>> File: src/js/woop.js <<< **/
+
+...
+
+/** >>> File: src/nibs/zebra.jsnib/zebra.js <<< **/
+
+...
+
+/** >>> File: src/nibs/zebra.jsnib/ZebraController.js <<< **/
+
+...
+
+distil.moduleLoaded("Foo");

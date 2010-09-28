@@ -1,0 +1,35 @@
+name: MyProject
+type: framework|application
+version: 1.0.0
+notice: src/NOTICE
+
+require:
+  # Named external project
+  - name: coherent
+    href: git://github.com/jeffwatkins/coherent.git
+    version: HEAD
+  # External project reference by URL
+  - http://github.com/DmitryBaranovskiy/raphael/raw/v1.4.7/raphael.js
+
+include:
+  # Explicitly include the external projects if you want it included in the
+  # output JS & CSS files.
+  - coherent
+  - raphael
+  
+  # Project source files
+  - src/css/file1.css
+  - src/css/file2.css
+  - src/css/file3.css
+
+  - src/js/file1.js
+  - src/js/file2.js
+  - src/js/file3.js
+  # Standard wildcards may be used rather than specifying each individual
+  # source file.
+  - src/js/folder/*.js
+  # In addition, wildcards can be used for folders to process an entire
+  # tree.
+  - src/js/tree/**/*.js
+  # Specify jsnib folders rather than files with the folder
+  - src/nibs/foo.jsnib

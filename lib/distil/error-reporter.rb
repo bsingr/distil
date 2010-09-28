@@ -23,42 +23,40 @@ module Distil
       @@total_warning_count
     end
     
+    def has_errors
+      @@error_count > 0
+    end
+
     def self.error(message, file=nil, line_number=nil)
       @@error_count+=1
-      if (file && line_number)
-        printf("%s:%d: error: %s\n", file, line_number, message)
+
+      case when file && line_number
+        puts "#{file}:#{line_number}: error: #{message}"
+      when file
+        puts "#{file}: error: #{message}"
       else
-        printf("error: %s\n", message)
+        puts "error: #{message}"
       end
     end
     
     def error(message, file=nil, line_number=nil)
-      @@error_count+=1
-      if (file && line_number)
-        printf("%s:%d: error: %s\n", file, line_number, message)
-      else
-        printf("error: %s\n", message)
-      end
+      ErrorReporter.error(message, file, line_number)
     end
 
     def self.warning(message, file=nil, line_number=nil)
       @@warning_count+=1
       return if (ignore_warnings)
-      if (file && line_number)
-        printf("%s:%d: warning: %s\n", file, line_number, message)
+      case when file && line_number
+        puts "#{file}:#{line_number}: warning: #{message}"
+      when file
+        puts "#{file}: warning: #{message}"
       else
-        printf("warning: %s\n", message)
+        puts "warning: #{message}"
       end
     end
 
     def warning(message, file=nil, line_number=nil)
-      @@warning_count+=1
-      return if (ignore_warnings)
-      if (file && line_number)
-        printf("%s:%d: warning: %s\n", file, line_number, message)
-      else
-        printf("warning: %s\n", message)
-      end
+      ErrorReporter.warning(message, file, line_number)
     end
     
     def report
