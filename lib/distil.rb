@@ -45,6 +45,7 @@ def class_attr(*rest)
   }
 end
 
+require 'distil/hash-additions'
 require 'distil/error-reporter'
 require 'distil/subclass-tracker'
 require 'distil/configurable'

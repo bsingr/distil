@@ -12,8 +12,33 @@ module Distil
       @@config_aliases[key_alias] || key_alias
     end
     
-    def from_hash(hash)
+    class ConfigDsl
+      
+      attr_reader :used
+      def initialize(hash)
+        @hash= hash
+        @used= Set.new
+      end
+      
+      def with(key)
+        case when @hash.include?(key.to_sym)
+          yield @hash[key.to_sym]
+        when @hash.include?(key.to_s)
+          yield @hash[key.to_s]
+        else
+          return
+        end
+        @used << key.to_s
+      end
+    end
+    
+    def configure_with(hash)
+      dsl= ConfigDsl.new(hash)
+      yield dsl if block_given?
+      
       hash.each { |key, value|
+        next if dsl.used.include?(key.to_s)
+        
         key= alias_for_key(key)
         case
         when self.respond_to?("#{key}=")

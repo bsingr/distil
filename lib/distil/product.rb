@@ -1,38 +1,68 @@
 module Distil
   
+  RELEASE_VARIANT= :release
+  DEBUG_VARIANT= :debug
+  
   class Product
     class_attr :content_type
-    attr_reader :project
+    class_attr :variants
     
-    def initialize(project)
+    attr_reader :project, :files, :language, :variant, :assets
+
+    def initialize(project, language, variant=nil)
       @project= project
-    end
-
-    def handles_file?(file)
-      file.extension==content_type
-    end
-
-    def files
-      @files unless @files.nil?
-      
+      @language= language ? language.to_s : language
       @files= []
-      project.ordered_files.each { |f|
-        @files << f if handles_file?(f)
-      }
+      @assets= Set.new
+      @variant= variant
+    end
+
+    def filename
+      filename= "#{project.name}"
+      filename << "-#{language}" if language
+      filename << "-#{variant}" unless variant==RELEASE_VARIANT
+      filename << ".#{content_type}"
+    end
+    
+    def output_path
+      @output_path ||= File.join(project.output_path, filename)
+    end
+    
+    def handles_file?(file)
+      # puts "#{self.class}#handles_file: #{file} file-lang=#{file.language} prod-lang=#{language} equal=#{file.language==language}"
+      return (file.extension==content_type) &&
+             (language.nil? || file.language.nil? || file.language==language)
+    end
+  
+    def include_file(file)
+      return true if @files.include?(file)
+      if file.is_a?(RemoteAsset)
+        @files << file
+        return true
+      end
       
-      @files
+      if handles_file?(file)
+        @files << file
+        @assets.merge(file.assets) if file.assets
+        return true
+      end
     end
     
-    def build_debug
+    def up_to_date?
+      false
     end
-    
-    def build_release
+
+    def build
     end
     
     def minimise
     end
     
     def gzip
+    end
+    
+    def build
+      return if up_to_date?
     end
     
   end

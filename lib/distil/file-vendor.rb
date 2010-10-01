@@ -15,7 +15,7 @@ module Distil
     
       extension= File.extname(filepath)[1..-1]
     
-      SourceFile.file_types.each { |handler|
+      SourceFile.subclasses.each { |handler|
         next if (handler.extension != extension)
         return handler.new(filepath, self)
       }

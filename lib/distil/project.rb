@@ -2,31 +2,27 @@ module Distil
   
   BUILD_FILE= 'Buildfile'
   DEFAULT_OUTPUT_FOLDER= 'build'
-  
+  DEFAULT_LANGUAGE= 'en'
+
   class Project < Configurable
     include ErrorReporter
     include FileVendor
     
-    attr_reader :name, :path, :folder, :source_folder, :output_folder, :assets, :asset_aliases, :remote_assets, :include_paths
+    attr_reader :name, :path, :folder, :source_folder, :output_folder, :include_paths
+    attr_reader :assets, :asset_aliases
+    attr_reader :remote_assets_by_name, :remote_assets
+    attr_reader :languages
+    attr_reader :source_files
+    
     alias_config_key :project_type, :type
-    alias_config_key :source_files, :source
-    alias_config_key :remote_assets, :require
-    
-    def self.default
-      @default ||= find
-    end
-    
-    def self.default=(env)
-      @default = env
-    end
-    
+
     def self.find(dir=nil)
+      cwd= Dir.pwd
       dir ||= Dir.pwd
       while dir.length > 1
-        candidates= [BUILD_FILE, "*.jsproj"]
-        # candidates << BUILD_FILE.downcase unless File.identical?(BUILD_FILE, BUILD_FILE.downcase)
+        return new(File.join(dir, BUILD_FILE)) if File.exists?(File.join(dir, BUILD_FILE))
         
-        projects= Dir.glob(File.join(dir, "{#{candidates.join(",")}}"))
+        projects= Dir.glob(File.join(dir, "*.jsproj"))
         return new(projects.first) if 1==projects.size
         
         unless 0==projects.size
@@ -40,35 +36,96 @@ module Distil
         dir= File.dirname(dir)
       end
       
-      puts "Unable to find Project"
-      exit 1
+      nil
     end
     
     def initialize(env)
       @path= env
       @folder= File.dirname(@path)
       @source_folder= @folder
-      Dir.chdir(@folder)
       @output_folder= DEFAULT_OUTPUT_FOLDER
       @include_paths= [@folder]
-      @source_files= []
-      @ordered_files= []
+      @include_files= []
       @asset_aliases= {}
       @assets= Set.new
-      @inspected_files= Set.new
+      @source_files= Set.new
       @remote_assets=[]
       @remote_assets_by_name={}
+      @languages= []
+      
       yaml= YAML::load_file(@path)
-      from_hash(yaml)
+      local_yaml= File.exists?("#{@path}.local") ? YAML::load_file("#{@path}.local") : {}
+      
+      Dir.chdir(@folder) do
+        configure_with yaml do |c|
+          
+          c.with :languages do |languages|
+            languages= languages.split(',').map { |l| l.strip } if languages.is_a?(String)
+            @languages= languages
+          end
+          
+          c.with :require do |assets|
+            assets.each { |a|
+              local_asset= local_yaml["require"].find { |l| l["name"]==a["name"] && l["href"]==a["href"] }
+              a.deep_merge!(local_asset) if local_asset
+              asset= RemoteAsset.new(a, self)
+              @remote_assets << asset
+              @remote_assets_by_name[asset.name]= asset
+            }
+          end
+        
+          c.with :include do |files|
+            files= files.split(",").map { |f| f.strip } if files.is_a?(String)
+            files.each { |f| include_file(f) }
+
+            inspected= Set.new
+            assets= Set.new
+            ordered_files= []
+          
+            add_file= lambda { |f|
+              return unless include_files.include?(f)
+              return if inspected.include?(f)
+              inspected << f
+              f.dependencies.each { |d|
+                add_file.call d
+              }
+              ordered_files << f
+            }
+          
+            include_files.each { |f| add_file.call(f) }
+            ordered_files.each { |f|
+              used= false
+              products.each { |p|
+                used= true if p.include_file(f)
+              }
+              @source_files << f if used
+              @assets.merge(f.assets) if used && f.assets
+            }
+          end
+        end # configure_with
+        
+        FileUtils.mkdir_p output_folder
+        remote_assets.each { |a| a.build }
+      end
+      
     end  
 
-    def remote_assets=(assets)
-      assets.each { |a|
-        asset= RemoteAsset.new(a)
-        asset.build
-        @remote_assets << asset
-        @remote_assets_by_name[asset.name]= asset
+    def build
+      products.each { |product|
+        product.build
       }
+    end
+    
+    def inspect
+      "<#{self.class}:0x#{object_id.to_s(16)} name=#{name}>"
+    end
+    
+    def output_path
+      @output_path ||= File.join(folder, output_folder)
+    end
+    
+    def relative_output_path_for(thing)
+      Project.path_relative_to_folder(thing.is_a?(String) ? thing : thing.output_path, output_path)
     end
     
     def notice_text
@@ -76,23 +133,20 @@ module Distil
     end
     
     def products
-      @products unless @products.nil?
+      return @products unless @products.nil?
       
       @products= []
+      langs= languages.empty? ? [nil] : languages
+      
       Product.subclasses.each { |klass|
-        p= klass.new(self)
-        @products << p unless p.files.empty?
+        langs.each { |lang|
+          klass.variants.each { |v|
+            @products << klass.new(self, lang, v)
+          }
+        }
       }
       
       @products
-    end
-    
-    def product_files
-      @product_files unless @product_files.nil?
-      @product_files= []
-      products.each { |p| @product_files.concat(p.files) }
-      @product_files.uniq!
-      @product_files
     end
     
     def add_alias_for_asset(alias_name, asset)
@@ -100,79 +154,42 @@ module Distil
         error "Attempt to register asset with the same alias as another asset: #{alias_name}"
         return
       end
-      asset_aliases[alias_name]= asset
+      asset_aliases[asset]= alias_name
     end
     
-    def source_files
-      @source_files
+    def include_files
+      @include_files
     end
 
-    def source_files=(set)
-      @source_files=[]
-      set= set.split(",").map { |f| f.strip } if set.is_a?(String)
-      set.each { |f|
-        add_source_file(f)
-      }
-    end
-    
-    def add_source_file(file)
+    def include_file(file)
       return if file.nil?
       
-      if @remote_assets_by_name.include?(file)
-        asset= @remote_assets_by_name[file]
-        add_source_file asset.file_for(:js)
-        add_source_file asset.file_for(:css)
+      asset= @remote_assets_by_name[file]
+      if (asset)
+        @include_files << asset unless @include_files.include?(asset)
         return
       end
       
-      full_path= find_file(file)
+      matches= glob(file)
+      if (matches.empty?)
+        error("No matching files found for: #{file}")
+        return
+      end
       
-      unless full_path.nil?
-        if File.directory?(full_path)
-          files= Dir.glob(File.join(full_path, "**/*")) { |f|
-            add_source_file(f)
-          }
+      matches.each { |m|
+        if (File.directory?(m))
+          include_file(File.join(m, "**/*"))
         else
-          f= file_from_path(full_path)
-          @source_files << f unless @source_files.include?(f)
+          f= file_from_path(m)
+          unless @include_files.include?(f)
+            @include_files << f
+            # determine language
+            f.language= languages.find { |l| File.fnmatch?("**/#{l}/**", f.full_path) }
+          end
         end
-        return
-      end
-      
-      globbed= glob(file)
-    
-      if 0==globbed.length
-        error("File not found #{file}")
-        return
-      end
-      
-      globbed.each { |f|
-        f= file_from_path(f)
-        @source_files << f unless @source_files.include?(f)
       }
     end
     
-    def add_ordered_file(file)
-      return if @ordered_files.include?(file)
-      return unless @source_files.include?(file)
-      return if @inspected_files.include?(file)
-      
-      @inspected_files << file
-      file.dependencies.each { |d|
-        add_ordered_file(d)
-      }
-      @assets.merge(file.assets)
-      @ordered_files << file
-    end
-    
-    def ordered_files
-      @ordered_files unless @ordered_files.empty?
-      source_files.each { |f|
-        add_ordered_file(f)
-      }
-      @ordered_files
-    end
-        
     def glob(path)
       return path if File.exists?(path)
       
@@ -184,8 +201,10 @@ module Distil
 
       if (@remote_assets_by_name.include?(asset_name))
         asset= @remote_assets_by_name[asset_name]
-        return Dir.glob(File.join(asset.include_path, file_path))
+        return Dir.glob(File.join(asset.output_path, file_path))
       end
+      
+      files.concat(Dir.glob(path));
       
       include_paths.each { |i|
         files.concat(Dir.glob(File.join(i, path)))
@@ -211,7 +230,7 @@ module Distil
       
       return asset.file_for(content_type, mode) if 1==parts.length
       
-      f= File.join(asset.include_path, file_path)
+      f= File.join(asset.output_path, file_path)
       return f if File.exists?(f)
       
       nil

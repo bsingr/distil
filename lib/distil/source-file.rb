@@ -3,7 +3,9 @@ require 'fileutils'
 module Distil
 
   class SourceFile
-    attr_accessor :full_path, :project
+    attr_reader :full_path, :project
+    attr_accessor :language
+    
     class_attr :extension
     class_attr :content_type
     
@@ -23,12 +25,19 @@ module Distil
       super(message, self, line)
     end
     
-    def self.file_types
-      self.subclasses
+    def output_path
+      # SourceFiles get copied (or symlinked) into the output folder so that
+      # their path is the same as that relative to the source folder
+      @output_path||= File.join(project.output_path, relative_path)
     end
-
+    
     def relative_path
-      Project.path_relative_to_folder(full_path, project.folder)
+      return @relative_path if @relative_path
+      if 0==full_path.index(project.output_path)
+        @relative_path= Project.path_relative_to_folder(full_path, project.output_path)
+      else
+        @relative_path=Project.path_relative_to_folder(full_path, project.source_folder)
+      end
     end
     
     def path_relative_to(path)
@@ -63,6 +72,10 @@ module Distil
       @content ||= File.read(full_path)
     end
 
+    def rewrite_content_relative_to_path(path)
+      content
+    end
+    
     def last_modified
       @last_modified ||= File.stat(@full_path).mtime
     end

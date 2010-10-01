@@ -1,6 +1,7 @@
 module Distil
 
   JSL_IMPORT_REGEX= /\/\*jsl:import\s+([^\*]*)\*\//
+  NIB_ASSET_REGEX= /(NIB\.asset(?:Url)?)\(['"]([^)]+)['"]\)/
   
   class JavascriptFile < SourceFile
     extension "js"
@@ -15,12 +16,22 @@ module Distil
       Dir.glob("#{dirname}/**/*") { |asset|
         next if File.directory?(asset) || asset.to_s==full_path
         asset= project.file_from_path(asset)
+        add_asset(asset)
         if ('html'==asset.content_type)
           project.add_alias_for_asset("#{nib_name}##{asset.basename}", asset)
-        else
-          add_asset(asset)
         end
       }
+    end
+    
+    def rewrite_content_relative_to_path(path)
+      content.gsub(NIB_ASSET_REGEX) do |match|
+          asset= project.file_from_path(File.join(dirname, $2))
+          if asset
+            "#{$1}('#{asset.relative_path}')"
+          else
+            match
+          end
+      end
     end
     
     def dependencies
@@ -34,7 +45,7 @@ module Distil
         line_num+=1
       
         # handle dependencies
-        line.gsub(JSL_IMPORT_REGEX) do |match|
+        line.scan(JSL_IMPORT_REGEX) do |match|
           import_file= File.join(dirname, $1)
           if (File.exists?(import_file))
             add_dependency project.file_from_path(import_file)
@@ -46,8 +57,15 @@ module Distil
               error "Missing import file: #{$1}", line_num
             end
           end
-          # replace jsl import with empty string
-          ""
+        end
+        
+        line.scan(NIB_ASSET_REGEX) do |match|
+          asset= project.file_from_path(File.join(dirname, $1))
+          if asset
+            add_asset(asset)
+          else
+            error "Missing asset file: #{$1}", line_num
+          end
         end
       end
 

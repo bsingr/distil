@@ -7,8 +7,8 @@ module Distil
     extension 'json'
     content_type 'js'
     
-    def minified_content
-      super("(#{content})")[1..-3]
+    def minified_content(source=content)
+      super("(#{source})")[1..-3]
     end
   
   end

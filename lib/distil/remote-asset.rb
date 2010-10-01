@@ -1,70 +1,81 @@
-require 'uri'
-
 module Distil
   
   REMOTE_ASSET_CACHE_FOLDER= File.expand_path("~/.distil/asset_cache")
   
   class RemoteAsset < Configurable
 
-    attr_accessor :name, :href, :version, :include_path
+    attr_accessor :name, :path, :href, :version, :include_path, :project
 
-    def initialize(config)
+    def initialize(config, project)
+      @project= project
+      
       if config.is_a?(String)
         config= {
           :href=>config
         }
       end
-      from_hash(config)
-      @name ||= File.basename(href.path, ".*")
-    end
 
-    def href=(new_href)
-      @href= URI.parse(new_href)
-      @cache_folder= nil
-      case
-        when svn_url?
-          @protocol= 'svn'
-        when git_url?
-          @protocol= 'git'
-        when http_folder?
-          @protocol= 'http_recursive'
-        else
-          @protocol= 'http'
+      configure_with(config) do |c|
+        c.with :href do |href|
+          @href= URI.parse(href)
+          case when svn_url?
+            @protocol= 'svn'
+          when git_url?
+            @protocol= 'git'
+          when http_folder?
+            @protocol= 'http_recursive'
+          else
+            @protocol= 'http'
+          end
         end
-      @href
-    end
-    
-    def version=(new_version)
-      @version= new_version
-      @cache_folder= nil
-    end
-    
-    def include_path
-      File.join(cache_folder, @include_path||"")
-    end
-    
-    def cache_folder
-      @cache_folder unless @cache_folder.nil?
+      end
       
-      parts= [REMOTE_ASSET_CACHE_FOLDER, href.host, File.dirname(href.path)]
-      case
-        when svn_url? || git_url?
+      @name ||= File.basename(href.path, ".*")
+
+      if @path.nil?
+        parts= [REMOTE_ASSET_CACHE_FOLDER, href.host, File.dirname(href.path)]
+        case when svn_url? || git_url?
           parts << File.basename(href.path, ".*")
         when http_folder?
           parts << File.basename(href.path)
         end
-      @cache_folder= File.join(*parts)
-      @cache_folder << "-#{@version}" unless @version.nil?
-      @cache_folder
+        @path= File.join(*parts)
+        @path << "-#{@version}" unless @version.nil?
+      end
+      
+      @path= File.expand_path(@path)
+    end
+
+    def to_s
+      "RemoteAsset: #{name} @ #{path}"
+    end
+
+    def dependencies
+      []
+    end
+    
+    def assets
+      nil
+    end
+    
+    def include_path
+      File.join(path, @include_path||"")
+    end
+    
+    def product_path
+      @product_path || path
     end
     
     def build_command
       @build_command unless @build_command.nil?
       
-      Dir.chdir(cache_folder) do
+      Dir.chdir(path) do
         case
         when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
           @build_command= "distil"
+          remote_project= Project.find(path)
+          output_folder= remote_project ? remote_project.output_folder : 'build'
+          @product_path= File.join(path, output_folder)
         when File.exist?("Makefile") || File.exist?("makefile")
           @build_command= "make"
         when File.exists?("Rakefile") || File.exists?("rakefile")
@@ -104,8 +115,8 @@ module Distil
     
     def fetch_with_git
       ensure_git
-      FileUtils.mkdir_p(cache_folder)
-      Dir.chdir cache_folder do
+      FileUtils.mkdir_p(path)
+      Dir.chdir path do
         clone_cmd  = "git clone"
         clone_cmd += " -b #{version}" unless version.nil?
         clone_cmd += " #{href} ."
@@ -121,19 +132,19 @@ module Distil
         raise ValidationError, "Cannot read from project source url: #{href}"
       end
 
-      FileUtils.mkdir_p(cache_folder)
+      FileUtils.mkdir_p(path)
       begin
         text= href.read
       rescue OpenURI::HTTPError => http_error
         raise ValidationError, "Unable to fetch remote project: status=#{http_error.io.status[0]} url=#{href}"
       end
-      File.open(File.join(cache_folder, File.basename(href.path)), "w") { |output|
+      File.open(File.join(path, File.basename(href.path)), "w") { |output|
         output.write text
       }
     end
 
     def fetch_with_http_recursive
-      dir= File.dirname(cache_folder)
+      dir= File.dirname(path)
       FileUtils.mkdir_p(dir)
       fetcher= Distil::RecursiveHTTPFetcher.new(href, 1, dir)
       fetcher.fetch
@@ -145,7 +156,7 @@ module Distil
     
     def update_with_git
       ensure_git
-      Dir.chdir cache_folder do
+      Dir.chdir path do
         `git pull`
       end
     end
@@ -158,38 +169,50 @@ module Distil
       self.send "update_with_#{@protocol}"
     end
     
-    def build
-      if !File.exist?(cache_folder)
-        fetch
-      else
-        update
-      end
-      command= build_command
-      return if command.empty?
-      
-      Dir.chdir(cache_folder) do
-        exit 1 if !system("#{command}")
-      end
+    def output_path
+      @output_path||= File.join(project.output_path, name)
     end
     
-    def file_for(content_type, mode=nil)
-      if :debug==mode || :import==mode
-        file= File.join(include_path, "#{name}-debug.#{content_type}")
+    def build
+      # if !File.exist?(path)
+      #   fetch
+      # else
+      #   update
+      # end
+      # command= build_command
+      # return if command.empty?
+      # 
+      # Dir.chdir(path) do
+      #   exit 1 if !system("#{command}")
+      # end
+      # 
+      # File.unlink(output_path) if File.symlink?(output_path)
+      # # FileUtils.rm_rf(project_path) if File.directory?(project_path)
+      # FileUtils.ln_s(product_path, output_path)
+    end
+    
+    def content_for(content_type, variant=RELEASE_VARIANT)
+      file= file_for(content_type, variant)
+      return nil if !file
+      File.read(file)
+    end
+    
+    def file_for(content_type, variant=RELEASE_VARIANT)
+      if RELEASE_VARIANT!=variant
+        file= File.join(output_path, "#{name}-#{variant}.#{content_type}")
         return file if File.exists?(file)
       end
-      file= File.join(include_path, "#{name}.#{content_type}")
+      file= File.join(output_path, "#{name}-uncompressed.#{content_type}")
+      return file if File.exists?(file)
+      file= File.join(output_path, "#{name}.#{content_type}")
       return file if File.exists?(file)
       
-      candidates= Dir.glob(File.join(include_path, "*.#{content_type}"))
+      candidates= Dir.glob(File.join(output_path, "*.#{content_type}"))
       return candidates.first if 1==candidates.length
       
       nil
     end
 
-    def debug_file_for(content_type)
-      file_for(content_type, :debug)
-    end
-    
   end
   
 end
