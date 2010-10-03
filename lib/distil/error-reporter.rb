@@ -23,8 +23,12 @@ module Distil
       @@total_warning_count
     end
     
-    def has_errors
+    def has_errors?
       @@error_count > 0
+    end
+
+    def has_warnings?
+      @@warning_count > 0
     end
 
     def self.error(message, file=nil, line_number=nil)

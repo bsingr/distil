@@ -24,10 +24,11 @@ module Distil
     end
     
     def rewrite_content_relative_to_path(path)
-      content.gsub(NIB_ASSET_REGEX) do |match|
+      text= content.gsub(JSL_IMPORT_REGEX, '')
+      text.gsub(NIB_ASSET_REGEX) do |match|
           asset= project.file_from_path(File.join(dirname, $2))
           if asset
-            "#{$1}('#{asset.relative_path}')"
+            "#{$1}(\"#{asset.relative_path}\")"
           else
             match
           end
@@ -80,7 +81,7 @@ module Distil
         if File.exists?(html_path)
           asset= project.file_from_path(html_path)
           add_asset(asset)
-          project.add_asset_alias(html, asset)
+          project.add_alias_for_asset(html, asset)
         end
       end
       

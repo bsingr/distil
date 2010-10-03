@@ -4,7 +4,8 @@ module Distil
   
   class RemoteAsset < Configurable
 
-    attr_accessor :name, :path, :href, :version, :include_path, :project
+    attr_reader :name, :path, :href, :version, :include_path, :project
+    attr_reader :build_command, :revision, :protocol
 
     def initialize(config, project)
       @project= project
@@ -19,13 +20,13 @@ module Distil
         c.with :href do |href|
           @href= URI.parse(href)
           case when svn_url?
-            @protocol= 'svn'
+            @protocol= :svn
           when git_url?
-            @protocol= 'git'
+            @protocol= :git
           when http_folder?
-            @protocol= 'http_recursive'
+            @protocol= :http_recursive
           else
-            @protocol= 'http'
+            @protocol= :http
           end
         end
       end
@@ -44,6 +45,24 @@ module Distil
       end
       
       @path= File.expand_path(@path)
+
+      Dir.chdir(path) do
+        case
+        when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
+          @build_command= "distil"
+          remote_project= Project.find(path)
+          output_folder= remote_project ? remote_project.output_folder : 'build'
+          @product_path= File.join(path, output_folder)
+        when File.exist?("Makefile") || File.exist?("makefile")
+          @build_command= "make"
+        when File.exists?("Rakefile") || File.exists?("rakefile")
+          @build_command= "rake"
+        when File.exists?("Jakefile") || File.exists?("jakefile")
+          @build_command= "jake"
+        else
+          @build_command= ""
+        end
+      end
     end
 
     def to_s
@@ -66,30 +85,6 @@ module Distil
       @product_path || path
     end
     
-    def build_command
-      @build_command unless @build_command.nil?
-      
-      Dir.chdir(path) do
-        case
-        when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
-          @build_command= "distil"
-          remote_project= Project.find(path)
-          output_folder= remote_project ? remote_project.output_folder : 'build'
-          @product_path= File.join(path, output_folder)
-        when File.exist?("Makefile") || File.exist?("makefile")
-          @build_command= "make"
-        when File.exists?("Rakefile") || File.exists?("rakefile")
-          @build_command= "rake"
-        when File.exists?("Jakefile") || File.exists?("jakefile")
-          @build_command= "jake"
-        else
-          @build_command= ""
-        end
-      end
-      
-      @build_command
-    end
-    
     def svn_url?
       "#{@href}" =~ /svn(?:\+ssh)?:\/\/*/
     end
@@ -102,7 +97,7 @@ module Distil
       File.extname(href.path).empty?
     end
 
-    def ensure_git
+    def require_git
       begin
         `git --version 2>/dev/null`
       rescue
@@ -114,7 +109,7 @@ module Distil
     end
     
     def fetch_with_git
-      ensure_git
+      require_git
       FileUtils.mkdir_p(path)
       Dir.chdir path do
         clone_cmd  = "git clone"
@@ -155,7 +150,7 @@ module Distil
     end
     
     def update_with_git
-      ensure_git
+      require_git
       Dir.chdir path do
         `git pull`
       end
@@ -166,29 +161,41 @@ module Distil
     end
     
     def update
-      self.send "update_with_#{@protocol}"
+      if File.exists?(path)
+        self.send "update_with_#{@protocol}"
+      else
+        fetch
+      end
     end
     
     def output_path
       @output_path||= File.join(project.output_path, name)
     end
     
+    def up_to_date?
+      return false unless File.exists?(path)
+      case protocol
+      when :git
+        require_git
+        revision==`git rev-parse #{version}`
+      else
+        true
+      end
+    end
+    
     def build
-      # if !File.exist?(path)
-      #   fetch
-      # else
-      #   update
-      # end
-      # command= build_command
-      # return if command.empty?
-      # 
-      # Dir.chdir(path) do
-      #   exit 1 if !system("#{command}")
-      # end
-      # 
-      # File.unlink(output_path) if File.symlink?(output_path)
-      # # FileUtils.rm_rf(project_path) if File.directory?(project_path)
-      # FileUtils.ln_s(product_path, output_path)
+      # update unless up_to_date?
+
+      command= build_command
+      return if command.empty?
+      
+      Dir.chdir(path) do
+        exit 1 if !system("#{command}")
+      end
+      
+      File.unlink(output_path) if File.symlink?(output_path)
+      # FileUtils.rm_rf(project_path) if File.directory?(project_path)
+      FileUtils.ln_s(product_path, output_path)
     end
     
     def content_for(content_type, variant=RELEASE_VARIANT)

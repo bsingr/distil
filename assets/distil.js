@@ -365,11 +365,13 @@
       injectionComplete(currentResource);
   }
 
-  distil.kick= function()
+  distil.moduleDidLoad= function(moduleName)
   {
     if (rootResource===currentResource)
       injectionComplete(currentResource);
   }
+  
+  distil.kick= distil.moduleDidLoad;
   
   distil.urlForAssetWithNameInModule= function(asset, moduleName)
   {

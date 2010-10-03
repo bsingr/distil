@@ -1,11 +1,24 @@
 module Distil
 
+  JSL_CONF= "#{LIB_DIR}/jsl.conf"
+  # LINT_COMMAND= "#{VENDOR_DIR}/jsl-0.3.0/bin/jsl"
+  LINT_COMMAND= "/Users/jeff/.gem/ruby/1.8/gems/distil-0.13.1/vendor/jsl-0.3.0/bin/jsl"
+  BOOTSTRAP_SCRIPT= "#{ASSETS_DIR}/distil.js"
+  FILE_SEPARATOR= "        /*jsl:ignore*/;/*jsl:end*/"
+  
+  JS_GLOBALS= Set.new ['Array', 'Boolean', 'Date', 'Error', 'EvalError',
+                       'Function', 'Math', 'Number', 'Object', 'RangeError',
+                       'ReferenceError', 'RegExp', 'String', 'SyntaxError',
+                       'TypeError', 'URIError']
+
   class JavascriptProduct < Product
     content_type "js"
     variants [RELEASE_VARIANT, DEBUG_VARIANT]
     
+    include ErrorReporter
+    
     MODULE_TEMPLATE= ERB.new %q{
-      distil.beginModule("<%=project.name%>", <%=json_for(definition)%>);
+      distil.module("<%=project.name%>", <%=json_for(definition)%>);
     }.gsub(/^      /, '')
     
     def can_embed_as_content(file)
@@ -30,11 +43,10 @@ module Distil
       required_files= []
       
       files.each { |f|
-        if f.is_a?(RemoteAsset)
-          required_files << project.relative_output_path_for(f.file_for(content_type, variant))
-        else
-          required_files << project.relative_output_path_for(f)
-        end
+        f= f.file_for(content_type, variant) if f.is_a?(RemoteAsset)
+        next if !f
+        
+        required_files << project.relative_output_path_for(f)
       }
       
       assets.each { |asset|
@@ -51,9 +63,9 @@ module Distil
         end
       }
       
-      definition[:asset_paths]= asset_paths
+      definition[:asset_map]= asset_paths
       if RELEASE_VARIANT==variant
-        definition[:asset_data]= asset_data
+        definition[:assets]= asset_data
       else
         definition[:required]= required_files
       end
@@ -63,28 +75,64 @@ module Distil
 
     def build_release
       File.open(output_path, "w") { |output|
-        output.puts module_definition
         
+        output.write(project.notice_text)
+
+        if (APPLICATION_TYPE==project.project_type)
+          output.puts File.read(BOOTSTRAP_SCRIPT)
+          output.puts FILE_SEPARATOR
+        end
+
+        # emit remote assets first
         files.each { |f|
-          if f.is_a?(RemoteAsset)
-            content= f.content_for(content_type, variant)
-            output.puts "/* #{f.name} */"
-          else
-            content= f.rewrite_content_relative_to_path(nil)
-            output.puts "/* #{f.relative_path} */"
-          end
+          next unless f.is_a?(RemoteAsset)
+          content= f.content_for(content_type, variant)
+          next unless content && !content.empty?
+          output.puts content
+          output.puts FILE_SEPARATOR
+        }
+        
+        output.puts module_definition
+
+        if project.global_export
+          exports= [project.global_export, *project.additional_globals].join(", ")
+          output.puts "(function(#{exports}){"
+        end
+
+        files.each { |f|
+          next if f.is_a?(RemoteAsset)
+          content= f.rewrite_content_relative_to_path(nil)
 
           next if !content || content.empty?
             
           output.puts content
           output.puts ""
+          output.puts FILE_SEPARATOR
         }
-          
+        
+        if project.global_export
+          exports= ["window.#{project.global_export}=window.#{project.global_export}||{}", *project.additional_globals].join(", ")
+          output.puts "})(#{exports});"
+        end
+        
+        output.puts "distil.moduleDidLoad('#{project.name}');"  
       }
     end
 
     def build_debug
       File.open(output_path, "w") { |output|
+        
+        output.write(project.notice_text)
+        
+        if (APPLICATION_TYPE==project.project_type)
+          output.puts File.read(BOOTSTRAP_SCRIPT)
+        end
+        
+        if project.global_export
+          output.puts
+          output.puts "window.#{project.global_export}=window.#{project.global_export}||{};"
+          output.puts
+        end
         
         files.each { |f|
           if f.is_a?(RemoteAsset)
@@ -97,6 +145,7 @@ module Distil
           output.puts "/*jsl:import #{path}*/"
         }
 
+
         output.puts module_definition
           
       }
@@ -105,10 +154,74 @@ module Distil
     def build
       return if up_to_date?
       
+      puts "\n#{filename}:\n\n"
+      validate_files
+      
       FileUtils.mkdir_p(File.dirname(output_path))
       self.send "build_#{variant}"
+      report
     end
     
+    def validate_files
+      return if (!File.exists?(LINT_COMMAND))
+
+      tmp= Tempfile.new("jsl.conf")
+    
+      conf_files= [ "jsl.conf",
+                    "#{ENV['HOME']}/.jsl.conf",
+                    JSL_CONF
+                  ]
+
+      jsl_conf= conf_files.find { |f| File.exists?(f) }
+
+      tmp << File.read(jsl_conf)
+      tmp << "\n"
+
+      tmp << "+define distil\n"
+      
+      if (project.global_export)
+        tmp << "+define #{project.global_export}\n"
+      end
+      
+      project.additional_globals.each { |g|
+        next if JS_GLOBALS.include?(g)
+        tmp << "+define #{g}\n"
+      }
+      
+      files.each { |f|
+        if f.is_a?(RemoteAsset)
+          tmp.puts "+alias #{f.name} #{f.file_for(content_type, DEBUG_VARIANT)}"
+        else
+          tmp.puts "+process #{f}"
+        end
+      }
+
+      tmp.close()
+      command= "#{LINT_COMMAND} -nologo -nofilelisting -conf #{tmp.path}"
+
+      stdin, stdout, stderr= Open3.popen3(command)
+      stdin.close
+      output= stdout.read
+      errors= stderr.read
+
+      tmp.delete
+    
+      output= output.split("\n")
+      summary= output.pop
+      match= summary.match(/(\d+)\s+error\(s\), (\d+)\s+warning\(s\)/)
+      if (match)
+        @@error_count+= match[1].to_i
+        @@warning_count+= match[2].to_i
+      end
+    
+      output= output.join("\n")
+    
+      if (!output.empty?)
+        puts output
+        puts
+      end
+
+    end
   end
   
 end

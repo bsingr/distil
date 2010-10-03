@@ -4,6 +4,9 @@ module Distil
   DEFAULT_OUTPUT_FOLDER= 'build'
   DEFAULT_LANGUAGE= 'en'
 
+  APPLICATION_TYPE= 'application'
+  FRAMEWORK_TYPE= 'framework'
+  
   class Project < Configurable
     include ErrorReporter
     include FileVendor
@@ -11,9 +14,11 @@ module Distil
     attr_reader :name, :path, :folder, :source_folder, :output_folder, :include_paths
     attr_reader :assets, :asset_aliases
     attr_reader :remote_assets_by_name, :remote_assets
-    attr_reader :languages
+    attr_reader :languages, :project_type
     attr_reader :source_files
-    
+    attr_reader :global_export
+    attr_reader :additional_globals
+
     alias_config_key :project_type, :type
 
     def self.find(dir=nil)
@@ -52,12 +57,28 @@ module Distil
       @remote_assets=[]
       @remote_assets_by_name={}
       @languages= []
+      @additional_globals= []
+      @name= File.basename(@folder, ".*")
       
       yaml= YAML::load_file(@path)
       local_yaml= File.exists?("#{@path}.local") ? YAML::load_file("#{@path}.local") : {}
-      
+
       Dir.chdir(@folder) do
         configure_with yaml do |c|
+
+          c.with :name do |name|
+            @name= name
+          end
+          
+          c.with :export do |export|
+            export=@name if true==export
+            @global_export= export
+          end
+          
+          c.with :globals do |globals|
+            globals= globals.split(',').map { |l| l.strip } if globals.is_a?(String)
+            @additional_globals= globals
+          end
           
           c.with :languages do |languages|
             languages= languages.split(',').map { |l| l.strip } if languages.is_a?(String)
@@ -73,6 +94,8 @@ module Distil
               @remote_assets_by_name[asset.name]= asset
             }
           end
+
+          puts "\n#{name} preprocess:\n\n"
         
           c.with :include do |files|
             files= files.split(",").map { |f| f.strip } if files.is_a?(String)
@@ -101,19 +124,24 @@ module Distil
               @source_files << f if used
               @assets.merge(f.assets) if used && f.assets
             }
+            
           end
+
+          report
         end # configure_with
         
         FileUtils.mkdir_p output_folder
-        remote_assets.each { |a| a.build }
       end
       
     end  
 
     def build
+      remote_assets.each { |a| a.build }
+      build_assets
       products.each { |product|
         product.build
       }
+      nil
     end
     
     def inspect
@@ -129,7 +157,7 @@ module Distil
     end
     
     def notice_text
-      @notice_text ||= File.read(@notice)
+      @notice_text ||= File.read(File.join(@folder, @notice))
     end
     
     def products
@@ -147,6 +175,52 @@ module Distil
       }
       
       @products
+    end
+    
+    def symlink_assets
+      Dir.chdir(output_path) do
+        folders= []
+
+        assets.each { |a|
+
+          next if (a.full_path).starts_with?(output_folder)
+
+          path= relative_output_path_for(a)
+          parts= File.dirname(path).split(File::SEPARATOR)
+          if ('.'==parts[0])
+            product_path= File.join(output_folder, path)
+            FileUtils.rm product_path if File.exists? product_path
+            File.symlink path, product_path
+            next
+          end
+
+          folders << parts[0] if !folders.include?(parts[0])
+        }
+    
+        folders.each { |f|
+          target= f
+          source= relative_output_path_for(File.join(source_folder, f))
+        
+          FileUtils.rm target if File.symlink?(target)
+          next if File.directory?(target)
+          File.symlink source, target
+        }
+      end
+    end
+  
+    def copy_assets
+      assets.each { |a|
+        a.copy_to(output_folder, source_folder)
+      }
+    end
+  
+    def build_assets
+      symlink_assets
+      # if (RELEASE_MODE==mode)
+      #   copy_assets
+      # else
+      #   symlink_assets
+      # end
     end
     
     def add_alias_for_asset(alias_name, asset)

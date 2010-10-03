@@ -33,7 +33,7 @@ module Distil
     
     def relative_path
       return @relative_path if @relative_path
-      if 0==full_path.index(project.output_path)
+      if full_path.starts_with?(project.output_path)
         @relative_path= Project.path_relative_to_folder(full_path, project.output_path)
       else
         @relative_path=Project.path_relative_to_folder(full_path, project.source_folder)
@@ -128,6 +128,7 @@ module Distil
 end
 
 # load all the other file types
-Dir.glob("#{Distil::LIB_DIR}/distil/source-file/*-file.rb") { |file|
-  require file
-}
+require 'distil/source-file/css-file'
+require 'distil/source-file/html-file'
+require 'distil/source-file/javascript-file'
+require 'distil/source-file/json-file'

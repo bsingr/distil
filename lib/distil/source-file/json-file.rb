@@ -1,5 +1,3 @@
-require "distil/source-file/javascript-file"
-
 module Distil
   
   class JsonFile < JavascriptFile
