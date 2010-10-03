@@ -2,6 +2,7 @@ module Distil
 
   JSL_IMPORT_REGEX= /\/\*jsl:import\s+([^\*]*)\*\//
   NIB_ASSET_REGEX= /(NIB\.asset(?:Url)?)\(['"]([^)]+)['"]\)/
+  NIB_DECLARATION_REGEX= /NIB\(\s*(["'])(\w(?:\w|-)*)\1\s*,/
   
   class JavascriptFile < SourceFile
     extension "js"
@@ -9,9 +10,6 @@ module Distil
 
     def check_nib
       nib_name= basename(".js")
-      unless content =~ /NIB\(\s*(['"])#{nib_name}\1/
-        error "NIB name must match match filename, otherwise NIB will be unloadable."
-      end
 
       Dir.glob("#{dirname}/**/*") { |asset|
         next if File.directory?(asset) || asset.to_s==full_path
@@ -39,12 +37,17 @@ module Distil
       @dependencies unless @dependencies.nil?
 
       @dependencies= []
+      is_nib_file= (full_path =~ /([^\.\/]+)\.jsnib\/\1\.js$/)
       
-      lines= content.split("\n")
-      line_num=0
-      lines.each do |line|
+      content.each_with_index do |line, line_num|
         line_num+=1
       
+        if is_nib_file && match=line.match(NIB_DECLARATION_REGEX)
+          unless match[2]==basename(".*")
+            error "NIB name must match match filename, otherwise NIB will be unloadable.", line_num
+          end
+        end
+        
         # handle dependencies
         line.scan(JSL_IMPORT_REGEX) do |match|
           import_file= File.join(dirname, $1)
@@ -70,7 +73,7 @@ module Distil
         end
       end
 
-      if full_path =~ /([^\.\/]+)\.jsnib\/\1\.js$/
+      if is_nib_file
         # Handle special asset requirements for NIB files
         check_nib
       else

@@ -20,7 +20,7 @@ module Distil
     def filename
       filename= "#{project.name}"
       filename << "-#{language}" if language
-      filename << "-#{variant}" unless variant==RELEASE_VARIANT
+      filename << "-#{variant}"
       filename << ".#{content_type}"
     end
     
@@ -53,9 +53,16 @@ module Distil
     end
 
     def build
+      return if up_to_date?
+      
+      FileUtils.mkdir_p(File.dirname(output_path))
+      self.send "build_#{variant}"
     end
     
     def minimise
+      return unless variant==RELEASE_VARIANT
+      build unless up_to_date?
+      
     end
     
     def gzip

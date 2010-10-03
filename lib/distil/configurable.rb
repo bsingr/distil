@@ -13,11 +13,25 @@ module Distil
     end
     
     class ConfigDsl
-      
       attr_reader :used
+
       def initialize(hash)
         @hash= hash
         @used= Set.new
+      end
+
+      def with_each(key)
+        case when @hash.include?(key.to_sym)
+          value= @hash[key.to_sym]
+        when @hash.include?(key.to_s)
+          value= @hash[key.to_s]
+        else
+          return
+        end
+        
+        value= value.split(",").map { |s| s.strip } if value.is_a?(String)
+        value.each { |v| yield v }
+        @used << key.to_s
       end
       
       def with(key)

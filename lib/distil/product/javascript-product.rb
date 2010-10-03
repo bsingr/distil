@@ -1,16 +1,8 @@
 module Distil
 
-  JSL_CONF= "#{LIB_DIR}/jsl.conf"
-  # LINT_COMMAND= "#{VENDOR_DIR}/jsl-0.3.0/bin/jsl"
-  LINT_COMMAND= "/Users/jeff/.gem/ruby/1.8/gems/distil-0.13.1/vendor/jsl-0.3.0/bin/jsl"
   BOOTSTRAP_SCRIPT= "#{ASSETS_DIR}/distil.js"
   FILE_SEPARATOR= "        /*jsl:ignore*/;/*jsl:end*/"
   
-  JS_GLOBALS= Set.new ['Array', 'Boolean', 'Date', 'Error', 'EvalError',
-                       'Function', 'Math', 'Number', 'Object', 'RangeError',
-                       'ReferenceError', 'RegExp', 'String', 'SyntaxError',
-                       'TypeError', 'URIError']
-
   class JavascriptProduct < Product
     content_type "js"
     variants [RELEASE_VARIANT, DEBUG_VARIANT]
@@ -151,77 +143,6 @@ module Distil
       }
     end
 
-    def build
-      return if up_to_date?
-      
-      puts "\n#{filename}:\n\n"
-      validate_files
-      
-      FileUtils.mkdir_p(File.dirname(output_path))
-      self.send "build_#{variant}"
-      report
-    end
-    
-    def validate_files
-      return if (!File.exists?(LINT_COMMAND))
-
-      tmp= Tempfile.new("jsl.conf")
-    
-      conf_files= [ "jsl.conf",
-                    "#{ENV['HOME']}/.jsl.conf",
-                    JSL_CONF
-                  ]
-
-      jsl_conf= conf_files.find { |f| File.exists?(f) }
-
-      tmp << File.read(jsl_conf)
-      tmp << "\n"
-
-      tmp << "+define distil\n"
-      
-      if (project.global_export)
-        tmp << "+define #{project.global_export}\n"
-      end
-      
-      project.additional_globals.each { |g|
-        next if JS_GLOBALS.include?(g)
-        tmp << "+define #{g}\n"
-      }
-      
-      files.each { |f|
-        if f.is_a?(RemoteAsset)
-          tmp.puts "+alias #{f.name} #{f.file_for(content_type, DEBUG_VARIANT)}"
-        else
-          tmp.puts "+process #{f}"
-        end
-      }
-
-      tmp.close()
-      command= "#{LINT_COMMAND} -nologo -nofilelisting -conf #{tmp.path}"
-
-      stdin, stdout, stderr= Open3.popen3(command)
-      stdin.close
-      output= stdout.read
-      errors= stderr.read
-
-      tmp.delete
-    
-      output= output.split("\n")
-      summary= output.pop
-      match= summary.match(/(\d+)\s+error\(s\), (\d+)\s+warning\(s\)/)
-      if (match)
-        @@error_count+= match[1].to_i
-        @@warning_count+= match[2].to_i
-      end
-    
-      output= output.join("\n")
-    
-      if (!output.empty?)
-        puts output
-        puts
-      end
-
-    end
   end
   
 end

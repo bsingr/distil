@@ -49,7 +49,7 @@ module Distil
 
     def self.warning(message, file=nil, line_number=nil)
       @@warning_count+=1
-      return if (ignore_warnings)
+      return if (@@ignore_warnings)
       case when file && line_number
         puts "#{file}:#{line_number}: warning: #{message}"
       when file

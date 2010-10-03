@@ -10,6 +10,7 @@ module Distil
   class Project < Configurable
     include ErrorReporter
     include FileVendor
+    include JavascriptFileValidator
     
     attr_reader :name, :path, :folder, :source_folder, :output_folder, :include_paths
     attr_reader :assets, :asset_aliases
@@ -60,6 +61,8 @@ module Distil
       @additional_globals= []
       @name= File.basename(@folder, ".*")
       
+      ignore_warnings= false
+      
       yaml= YAML::load_file(@path)
       local_yaml= File.exists?("#{@path}.local") ? YAML::load_file("#{@path}.local") : {}
 
@@ -71,63 +74,33 @@ module Distil
           end
           
           c.with :export do |export|
-            export=@name if true==export
+            export=@name.as_identifier if true==export
             @global_export= export
           end
           
-          c.with :globals do |globals|
-            globals= globals.split(',').map { |l| l.strip } if globals.is_a?(String)
-            @additional_globals= globals
+          c.with_each :globals do |global|
+            @additional_globals << global
           end
           
-          c.with :languages do |languages|
-            languages= languages.split(',').map { |l| l.strip } if languages.is_a?(String)
-            @languages= languages
+          c.with_each :languages do |language|
+            @languages << language
           end
           
-          c.with :require do |assets|
-            assets.each { |a|
-              local_asset= local_yaml["require"].find { |l| l["name"]==a["name"] && l["href"]==a["href"] }
-              a.deep_merge!(local_asset) if local_asset
-              asset= RemoteAsset.new(a, self)
-              @remote_assets << asset
-              @remote_assets_by_name[asset.name]= asset
-            }
+          c.with_each :require do |asset|
+            local_asset= local_yaml["require"].find { |l|
+                l["name"]==asset["name"] && l["href"]==asset["href"]
+              }
+            asset.deep_merge!(local_asset) if local_asset
+            asset= RemoteAsset.new(asset, self)
+            asset.build
+            @remote_assets << asset
+            @remote_assets_by_name[asset.name]= asset
           end
-
-          puts "\n#{name} preprocess:\n\n"
         
-          c.with :include do |files|
-            files= files.split(",").map { |f| f.strip } if files.is_a?(String)
-            files.each { |f| include_file(f) }
-
-            inspected= Set.new
-            assets= Set.new
-            ordered_files= []
-          
-            add_file= lambda { |f|
-              return unless include_files.include?(f)
-              return if inspected.include?(f)
-              inspected << f
-              f.dependencies.each { |d|
-                add_file.call d
-              }
-              ordered_files << f
-            }
-          
-            include_files.each { |f| add_file.call(f) }
-            ordered_files.each { |f|
-              used= false
-              products.each { |p|
-                used= true if p.include_file(f)
-              }
-              @source_files << f if used
-              @assets.merge(f.assets) if used && f.assets
-            }
-            
+          c.with_each :include do |file|
+            include_file(file)
           end
 
-          report
         end # configure_with
         
         FileUtils.mkdir_p output_folder
@@ -135,12 +108,44 @@ module Distil
       
     end  
 
+    def validate_files
+      validate_javascript_files
+    end
+
+    def compute_source_files
+      inspected= Set.new
+      ordered_files= []
+    
+      add_file= lambda { |f|
+        return unless include_files.include?(f)
+        return if inspected.include?(f)
+        inspected << f
+        f.dependencies.each { |d|
+          add_file.call d
+        }
+        ordered_files << f
+      }
+    
+      include_files.each { |f| add_file.call(f) }
+      ordered_files.each { |f|
+        used= false
+        products.each { |p|
+          used= true if p.include_file(f)
+        }
+        @source_files << f if used
+        @assets.merge(f.assets) if used && f.assets
+      }
+    end
+    
     def build
-      remote_assets.each { |a| a.build }
+      puts "\n#{name}:\n\n"
+      compute_source_files
+      validate_files
       build_assets
       products.each { |product|
         product.build
       }
+      report
       nil
     end
     

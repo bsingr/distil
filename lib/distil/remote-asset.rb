@@ -17,6 +17,7 @@ module Distil
       end
 
       configure_with(config) do |c|
+        
         c.with :href do |href|
           @href= URI.parse(href)
           case when svn_url?
@@ -29,6 +30,7 @@ module Distil
             @protocol= :http
           end
         end
+        
       end
       
       @name ||= File.basename(href.path, ".*")
@@ -205,10 +207,8 @@ module Distil
     end
     
     def file_for(content_type, variant=RELEASE_VARIANT)
-      if RELEASE_VARIANT!=variant
-        file= File.join(output_path, "#{name}-#{variant}.#{content_type}")
-        return file if File.exists?(file)
-      end
+      file= File.join(output_path, "#{name}-#{variant}.#{content_type}")
+      return file if File.exists?(file)
       file= File.join(output_path, "#{name}-uncompressed.#{content_type}")
       return file if File.exists?(file)
       file= File.join(output_path, "#{name}.#{content_type}")

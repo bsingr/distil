@@ -42,13 +42,6 @@ module Distil
       }
     end
     
-    def build
-      return if up_to_date?
-
-      FileUtils.mkdir_p(File.dirname(output_path))
-      self.send "build_#{variant}"
-    end
-    
   end
   
 end
