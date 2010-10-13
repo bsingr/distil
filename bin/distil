@@ -10,5 +10,12 @@ module Distil
   $:.unshift(LIB_DIR)
 
   require 'distil'
-    
+
+  project= Project.find(Dir.pwd)
+  unless project
+    puts "#{APP_NAME}: Could not find project to build"
+    exit 1
+  end
+  
+  project.build
 end

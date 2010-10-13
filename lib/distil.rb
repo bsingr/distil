@@ -1,3 +1,4 @@
+require "rubygems"
 require "set"
 require 'yaml'
 require 'tempfile'
@@ -7,17 +8,12 @@ require "open3"
 require 'uri'
 require 'erb'
 require 'open-uri'
-require 'json'
+require "json"
 
 module Distil
   class ValidationError < StandardError
   end
 
-  LIB_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "lib"))
-  VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
-  ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
-  APP_NAME= File.basename($0)
-  
   COMPRESSOR= File.expand_path("#{VENDOR_DIR}/yuicompressor-2.4.2.jar")
   
 end
@@ -57,6 +53,7 @@ class String
 end
 
 require 'distil/hash-additions'
+require 'distil/javascript-code'
 require 'distil/error-reporter'
 require 'distil/subclass-tracker'
 require 'distil/configurable'

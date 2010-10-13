@@ -11,7 +11,7 @@ module Distil
     
     MODULE_TEMPLATE= ERB.new %q{
       distil.module("<%=project.name%>", <%=json_for(definition)%>);
-    }.gsub(/^      /, '')
+    }.gsub(/^\s*/, '')
     
     def can_embed_as_content(file)
       ["css", "html", "json"].include?(file.extension)
@@ -68,8 +68,8 @@ module Distil
     def build_release
       File.open(output_path, "w") { |output|
         
-        output.write(project.notice_text)
-
+        output.puts notice_comment
+        
         if (APPLICATION_TYPE==project.project_type)
           output.puts File.read(BOOTSTRAP_SCRIPT)
           output.puts FILE_SEPARATOR
@@ -113,8 +113,8 @@ module Distil
 
     def build_debug
       File.open(output_path, "w") { |output|
-        
-        output.write(project.notice_text)
+
+        output.puts notice_comment
         
         if (APPLICATION_TYPE==project.project_type)
           output.puts File.read(BOOTSTRAP_SCRIPT)
@@ -136,7 +136,6 @@ module Distil
           next if !path
           output.puts "/*jsl:import #{path}*/"
         }
-
 
         output.puts module_definition
           

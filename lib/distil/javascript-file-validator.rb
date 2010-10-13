@@ -49,6 +49,8 @@ module Distil
       tmp.close()
       command= "#{LINT_COMMAND} -nologo -nofilelisting -conf #{tmp.path}"
 
+      # puts "jsl conf:\n#{File.read(tmp.path)}\n\n"
+      
       stdin, stdout, stderr= Open3.popen3(command)
       stdin.close
       output= stdout.read

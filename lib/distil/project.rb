@@ -73,6 +73,11 @@ module Distil
             @name= name
           end
           
+          c.with :output_folder do |output_folder|
+            @output_folder= output_folder
+          end
+          FileUtils.mkdir_p output_folder
+          
           c.with :export do |export|
             export=@name.as_identifier if true==export
             @global_export= export
@@ -97,13 +102,12 @@ module Distil
             @remote_assets_by_name[asset.name]= asset
           end
         
-          c.with_each :include do |file|
+          c.with_each :source do |file|
             include_file(file)
           end
 
         end # configure_with
         
-        FileUtils.mkdir_p output_folder
       end
       
     end  
@@ -157,12 +161,16 @@ module Distil
       @output_path ||= File.join(folder, output_folder)
     end
     
+    def relative_path_for(thing)
+      Project.path_relative_to_folder(thing.is_a?(String) ? thing : thing.full_path, path)
+    end
+    
     def relative_output_path_for(thing)
       Project.path_relative_to_folder(thing.is_a?(String) ? thing : thing.output_path, output_path)
     end
     
     def notice_text
-      @notice_text ||= File.read(File.join(@folder, @notice))
+      @notice_text ||= File.read(File.join(@folder, @notice)).strip
     end
     
     def products
@@ -186,11 +194,13 @@ module Distil
       Dir.chdir(output_path) do
         folders= []
 
-        assets.each { |a|
-
-          next if (a.full_path).starts_with?(output_folder)
+        files= assets+source_files
+        files.each { |a|
+          next if a.is_a?(RemoteAsset)
+          next if (a.full_path).starts_with?(output_path)
 
           path= relative_output_path_for(a)
+
           parts= File.dirname(path).split(File::SEPARATOR)
           if ('.'==parts[0])
             product_path= File.join(output_folder, path)
@@ -205,7 +215,7 @@ module Distil
         folders.each { |f|
           target= f
           source= relative_output_path_for(File.join(source_folder, f))
-        
+
           FileUtils.rm target if File.symlink?(target)
           next if File.directory?(target)
           File.symlink source, target

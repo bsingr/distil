@@ -6,7 +6,9 @@ module Distil
 
     def build_debug
       File.open(output_path, "w") { |output|
-        
+
+        output.puts notice_comment
+
         files.each { |f|
           if f.is_a?(RemoteAsset)
             path= f.file_for(content_type, variant)
@@ -23,6 +25,8 @@ module Distil
 
     def build_release
       File.open(output_path, "w") { |output|
+
+        output.puts notice_comment
         
         files.each { |f|
           if f.is_a?(RemoteAsset)

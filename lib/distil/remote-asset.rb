@@ -196,8 +196,9 @@ module Distil
       end
       
       File.unlink(output_path) if File.symlink?(output_path)
+      
       # FileUtils.rm_rf(project_path) if File.directory?(project_path)
-      FileUtils.ln_s(product_path, output_path)
+      File.symlink(project.relative_output_path_for(product_path), output_path)
     end
     
     def content_for(content_type, variant=RELEASE_VARIANT)

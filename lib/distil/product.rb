@@ -17,10 +17,17 @@ module Distil
       @variant= variant
     end
 
+    def notice_comment
+      return @notice_comment if @notice_comment
+      @notice_comment=  "/*!\n    "
+      @notice_comment<< project.notice_text.split("\n").join("\n    ")
+      @notice_comment<< "\n */\n"
+    end
+    
     def filename
       filename= "#{project.name}"
       filename << "-#{language}" if language
-      filename << "-#{variant}"
+      filename << "-#{variant}" if variants.length>1
       filename << ".#{content_type}"
     end
     
@@ -37,8 +44,12 @@ module Distil
     def include_file(file)
       return true if @files.include?(file)
       if file.is_a?(RemoteAsset)
-        @files << file
-        return true
+        if file.file_for(content_type, variant)
+          @files << file
+          return true
+        else
+          return false
+        end
       end
       
       if handles_file?(file)
@@ -49,27 +60,50 @@ module Distil
     end
     
     def up_to_date?
-      false
+      return false unless File.exists?(output_path)
+      product_last_modified= File.stat(output_path).mtime
+      files.each { |f|
+        if f.is_a?(RemoteAsset)
+          remote_asset= f.file_for(content_type, variant)
+          return false if remote_asset && File.stat(remote_asset).mtime > product_last_modified
+        else
+          return false if f.last_modified > product_last_modified
+        end
+      }
+      true
     end
 
     def build
-      return if up_to_date?
+      return if files.empty? || up_to_date?
       
       FileUtils.mkdir_p(File.dirname(output_path))
       self.send "build_#{variant}"
+      minimise
+      gzip
     end
     
     def minimise
-      return unless variant==RELEASE_VARIANT
-      build unless up_to_date?
+      return unless RELEASE_VARIANT==variant
+      minimised_filename= "#{project.name}"
+      minimised_filename << "-#{language}" if language
+      minimised_filename << ".#{content_type}"
+      minimised_filename= File.join(project.output_path, minimised_filename)
       
+      system("java -jar #{COMPRESSOR} --type #{content_type} -o #{minimised_filename} #{output_path}")
     end
     
     def gzip
-    end
-    
-    def build
-      return if up_to_date?
+      return unless RELEASE_VARIANT==variant
+      minimised_filename= "#{project.name}"
+      minimised_filename << "-#{language}" if language
+      minimised_filename << ".#{content_type}"
+      gzip_filename= "#{minimised_filename}.gz"
+      
+      minimised_filename= File.join(project.output_path, minimised_filename)
+      gzip_filename= File.join(project.output_path, gzip_filename)
+      Zlib::GzipWriter.open(gzip_filename) do |gz|
+        gz.write File.read(minimised_filename)
+      end
     end
     
   end
