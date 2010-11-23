@@ -72,8 +72,10 @@ module Distil
       build if !up_to_date
       
       require 'webrick'
+      mime_types = WEBrick::HTTPUtils::load_mime_types(File.join(ASSETS_DIR, "mime.types"))
       config= {
-        :Port => 8888
+        :Port => 8888,
+        :MimeTypes => mime_types
       }
 
       server= WEBrick::HTTPServer.new(config)
@@ -86,6 +88,7 @@ module Distil
       b.open("http://localhost:8888/")
       server.start
     end
+    alias :server :launch
     
     def load_distileries
       return if distileries.nil?
