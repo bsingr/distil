@@ -38,7 +38,7 @@ module Distil
       Dir.chdir path do
         clone_cmd  = "git clone #{uri} ."
         clone_cmd += " -q"
-        clone_cmd += " #{options["version"]}" if options["version"]
+        clone_cmd += " -b #{options["version"]}" if options["version"]
         if !system(clone_cmd)
           raise ValidationError.new("Failed to clone external project: #{uri}")
         end
