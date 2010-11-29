@@ -116,7 +116,7 @@ EOS
           f.write("/*jsl:import #{relative_path(file)}*/\n")
         }
         
-        if (APP_TYPE==target.target_type)
+        if (APP_TYPE==target.target_type && synchronous_load)
           f.puts "distil.sync= #{Kernel::Boolean(synchronous_load)};"
         end
         
