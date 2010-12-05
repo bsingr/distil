@@ -23,7 +23,7 @@ module Distil
         
         external_files.each { |ext|
           next if !File.exist?(ext)
-          f.write("@import url(\"#{relative_path(ext)});\n")
+          f.write("@import url(\"#{relative_path(ext)}\");\n")
         }
       
         files.each { |file|

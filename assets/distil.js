@@ -381,7 +381,7 @@
   
   distil.urlForAssetWithNameInModule= function(asset, moduleName)
   {
-    var module= name ? moduleIndex[moduleName] : distil.mainModule;
+    var module= moduleName ? moduleIndex[moduleName] : distil.mainModule;
     if (!module)
       throw new Error(NO_MODULE_ERROR + moduleName);
     if (!module.asset_map)
@@ -391,7 +391,7 @@
 
   distil.dataForAssetWithNameInModule= function(asset, moduleName)
   {
-    var module= name ? moduleIndex[moduleName] : distil.mainModule;
+    var module= moduleName ? moduleIndex[moduleName] : distil.mainModule;
     if (!module)
       throw new Error(NO_MODULE_ERROR + moduleName);
     if (!module.assets)
