@@ -7,12 +7,13 @@ module Distil
     class_attr :content_type
     class_attr :variants
     
-    attr_reader :project, :files, :language, :variant, :assets
+    attr_reader :project, :files, :language, :variant, :assets, :libraries
 
     def initialize(project, language, variant=nil)
       @project= project
       @language= language ? language.to_s : language
       @files= []
+      @libraries= []
       @assets= Set.new
       @variant= variant
     end
@@ -45,20 +46,17 @@ module Distil
     end
   
     def include_file(file)
-      return true if @files.include?(file)
-      if file.is_a?(RemoteAsset)
-        if file.file_for(content_type, variant)
-          @files << file
-          return true
-        else
-          return false
-        end
+      if file.is_a?(Library)
+        return true if @libraries.include?(file)
+        @libraries << file
+        return true
       end
+      
+      return true if @files.include?(file)
       
       if handles_file?(file)
         @files << file
         @assets.merge(file.assets) if file.assets
-        return true
       end
     end
     
@@ -66,12 +64,7 @@ module Distil
       return false unless File.exists?(output_path)
       product_last_modified= File.stat(output_path).mtime
       files.each { |f|
-        if f.is_a?(RemoteAsset)
-          remote_asset= f.file_for(content_type, variant)
-          return false if remote_asset && File.stat(remote_asset).mtime > product_last_modified
-        else
-          return false if f.last_modified > product_last_modified
-        end
+        return false if f.last_modified > product_last_modified
       }
       true
     end

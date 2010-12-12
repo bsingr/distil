@@ -14,7 +14,7 @@ module Distil
     
     attr_reader :name, :path, :folder, :source_folder, :output_folder, :include_paths
     attr_reader :assets, :asset_aliases
-    attr_reader :remote_assets_by_name, :remote_assets
+    attr_reader :libraries_by_name, :libraries
     attr_reader :languages, :project_type
     attr_reader :source_files
     attr_reader :global_export
@@ -55,8 +55,8 @@ module Distil
       @asset_aliases= {}
       @assets= Set.new
       @source_files= Set.new
-      @remote_assets=[]
-      @remote_assets_by_name={}
+      @libraries=[]
+      @libraries_by_name={}
       @languages= []
       @additional_globals= []
       @name= File.basename(@folder, ".*")
@@ -100,9 +100,9 @@ module Distil
               local_asset= nil
             end
             asset.deep_merge!(local_asset) if local_asset
-            asset= RemoteAsset.new(asset, self)
-            @remote_assets << asset
-            @remote_assets_by_name[asset.name]= asset
+            asset= Library.new(asset, self)
+            @libraries << asset
+            @libraries_by_name[asset.name]= asset
           end
         
           c.with_each :source do |file|
@@ -127,33 +127,31 @@ module Distil
         return unless include_files.include?(f)
         return if inspected.include?(f)
         inspected << f
-        f.dependencies.each { |d|
-          add_file.call d
-        }
+        
+        if f.respond_to? :dependencies
+          f.dependencies.each { |d|
+            add_file.call d
+          }
+        end
+        
         ordered_files << f
       }
     
       include_files.each { |f| add_file.call(f) }
       ordered_files.each { |f|
-        if f.is_asset
-          puts "skipping: #{f.relative_path}"
-          next
-        end
+        next if f.is_a?(SourceFile) && f.is_asset
+        
         used= false
         products.each { |p|
           used= true if p.include_file(f)
         }
-        if used
+        
+        next if !used
+        
+        if !f.is_a?(Library)
           @source_files << f
           @assets.merge(f.assets) if f.assets
         end
-      }
-      
-      # Catch any files that were included but didn't match a product
-      ordered_files.each { |f|
-        next if @source_files.include?(f)
-        next if @assets.include?(f)
-        puts "#{f.relative_path}"
       }
     end
     
@@ -220,7 +218,6 @@ module Distil
 
         files= assets+source_files
         files.each { |a|
-          next if a.is_a?(RemoteAsset)
           next if (a.full_path).starts_with?(output_path)
 
           path= relative_output_path_for(a)
@@ -277,7 +274,7 @@ module Distil
     def include_file(file)
       return if file.nil?
       
-      asset= @remote_assets_by_name[file]
+      asset= @libraries_by_name[file]
       if (asset)
         @include_files << asset unless @include_files.include?(asset)
         return
@@ -312,8 +309,8 @@ module Distil
       asset_name= parts[0]
       file_path= File.join(parts.slice(1..-1))
 
-      if (@remote_assets_by_name.include?(asset_name))
-        asset= @remote_assets_by_name[asset_name]
+      if (@libraries_by_name.include?(asset_name))
+        asset= @libraries_by_name[asset_name]
         return Dir.glob(File.join(asset.output_path, file_path))
       end
       
@@ -338,10 +335,10 @@ module Distil
       asset_name= parts[0]
       file_path= File.join(parts.slice(1..-1))
 
-      return nil unless @remote_assets_by_name.include?(asset_name)
-      asset= @remote_assets_by_name[asset_name]
+      return nil unless @libraries_by_name.include?(asset_name)
+      asset= @libraries_by_name[asset_name]
       
-      return asset.file_for(content_type, mode) if 1==parts.length
+      return asset.file_for(content_type, nil, mode) if 1==parts.length
       
       f= File.join(asset.output_path, file_path)
       return f if File.exists?(f)

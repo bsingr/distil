@@ -20,8 +20,6 @@ module Distil
     def escape_embeded_content(file)
       content= file.rewrite_content_relative_to_path(nil)
       file.minified_content(content)
-      # return content if content_type==file.content_type
-      # content.gsub("\\", "\\\\").gsub("\n", "\\n").gsub("\"", "\\\"").gsub("'", "\\\\'")
     end
 
     def json_for(obj)
@@ -34,10 +32,12 @@ module Distil
       definition= {}
       required_files= []
       
+      libraries.each { |l|
+        f= l.file_for(content_type, language, variant)
+        required_files << project.relative_output_path_for(f)
+      }
+      
       files.each { |f|
-        f= f.file_for(content_type, variant) if f.is_a?(RemoteAsset)
-        next if !f
-        
         required_files << project.relative_output_path_for(f)
       }
       
@@ -76,14 +76,17 @@ module Distil
         end
 
         # emit remote assets first
-        files.each { |f|
-          next unless f.is_a?(RemoteAsset)
-          content= f.content_for(content_type, variant)
-          next unless content && !content.empty?
+        libraries.each { |l|
+          f= project.file_from_path(l.file_for(content_type, language, variant))
+          next if !f
+          
+          content= f.rewrite_content_relative_to_path(nil)
+          next if !content || content.empty?
+          
           output.puts content
           output.puts FILE_SEPARATOR
         }
-        
+
         output.puts module_definition
 
         if project.global_export
@@ -92,7 +95,6 @@ module Distil
         end
 
         files.each { |f|
-          next if f.is_a?(RemoteAsset)
           content= f.rewrite_content_relative_to_path(nil)
 
           next if !content || content.empty?
@@ -125,14 +127,15 @@ module Distil
           output.puts "window.#{project.global_export}=window.#{project.global_export}||{};"
           output.puts
         end
+
+        libraries.each { |l|
+          path= project.relative_output_path_for(l.file_for(content_type, language, variant))
+          next if !path
+          output.puts "/*jsl:import #{path}*/"
+        }
         
         files.each { |f|
-          if f.is_a?(RemoteAsset)
-            path= project.relative_output_path_for(f.file_for(content_type, variant))
-          else
-            path= project.relative_output_path_for(f)
-          end
-          
+          path= project.relative_output_path_for(f)
           next if !path
           output.puts "/*jsl:import #{path}*/"
         }

@@ -169,6 +169,14 @@
   rootResource.fetched= true;
   rootResource.injected= true;
   
+  var args= (rootResource.url.split('?')[1]||"").split('&');
+  var argsLen= args.length;
+  while (argsLen--)
+  {
+    if (args[argsLen]==='sync=true')
+      distil.sync= true;
+  }
+  
   /** currentResource is the resource that is currently executing.
    */
   var currentResource= rootResource;

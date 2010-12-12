@@ -1,8 +1,8 @@
 module Distil
   
-  REMOTE_ASSET_CACHE_FOLDER= File.expand_path("~/.distil/asset_cache")
+  LIBRARY_CACHE_FOLDER= File.expand_path("~/.distil/library_cache")
   
-  class RemoteAsset < Configurable
+  class Library < Configurable
 
     attr_reader :name, :path, :href, :version, :include_path, :project
     attr_reader :build_command, :revision, :protocol
@@ -36,7 +36,7 @@ module Distil
       @name ||= File.basename(href.path, ".*")
 
       if @path.nil?
-        parts= [REMOTE_ASSET_CACHE_FOLDER, href.host, File.dirname(href.path)]
+        parts= [LIBRARY_CACHE_FOLDER, href.host, File.dirname(href.path)]
         case when svn_url? || git_url?
           parts << File.basename(href.path, ".*")
         when http_folder?
@@ -70,17 +70,9 @@ module Distil
     end
 
     def to_s
-      "RemoteAsset: #{name} @ #{path}"
+      "Library: #{name} @ #{path}"
     end
 
-    def dependencies
-      []
-    end
-    
-    def assets
-      nil
-    end
-    
     def include_path
       File.join(path, @include_path||"")
     end
@@ -209,10 +201,19 @@ module Distil
       File.read(file)
     end
     
-    def file_for(content_type, variant=RELEASE_VARIANT)
+    def file_for(content_type, language=nil, variant=RELEASE_VARIANT)
+      if language
+        file= File.join(output_path, "#{name}-#{language}-#{variant}.#{content-type}")
+        return file if File.exists?(file)
+        file= File.join(output_path, "#{name}-#{language}-release.#{content-type}")
+        return file if File.exists?(file)
+        file= File.join(output_path, "#{name}-#{language}.#{content-type}")
+        return file if File.exists?(file)
+      end
+      
       file= File.join(output_path, "#{name}-#{variant}.#{content_type}")
       return file if File.exists?(file)
-      file= File.join(output_path, "#{name}-uncompressed.#{content_type}")
+      file= File.join(output_path, "#{name}-release.#{content_type}")
       return file if File.exists?(file)
       file= File.join(output_path, "#{name}.#{content_type}")
       return file if File.exists?(file)

@@ -38,12 +38,12 @@ module Distil
         tmp << "+define #{g}\n"
       }
       
+      libraries.each { |l|
+        tmp.puts "+alias #{f.name} #{l.file_for(:js, nil, DEBUG_VARIANT)}"
+      }
+      
       source_files.each { |f|
-        if f.is_a?(RemoteAsset)
-          tmp.puts "+alias #{f.name} #{f.file_for(:js, DEBUG_VARIANT)}"
-        else
-          tmp.puts "+process #{f}" if f.content_type=="js"
-        end
+        tmp.puts "+process #{f}" if f.content_type=="js"
       }
 
       tmp.close()

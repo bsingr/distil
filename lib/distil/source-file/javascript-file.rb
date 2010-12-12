@@ -16,9 +16,15 @@ module Distil
       Dir.glob("#{dirname}/**/*") { |asset|
         next if File.directory?(asset) || asset.to_s==full_path
         asset= project.file_from_path(asset)
-        add_asset(asset)
-        if ('html'==asset.content_type)
+
+        case
+        when 'js'==asset.content_type || 'css'==asset.content_type
+          add_dependency(asset)
+        when 'html'==asset.content_type
+          add_asset(asset)
           project.add_alias_for_asset("#{nib_name}##{asset.basename}", asset)
+        else
+          add_asset(asset)
         end
       }
     end
