@@ -51,7 +51,7 @@ module Distil
       Dir.chdir(path) do
         case
         when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
-          @build_command= "distil"
+          @build_command= APP_SCRIPT
           remote_project= Project.find(path)
           output_folder= remote_project ? remote_project.output_folder : 'build'
           @product_path= File.join(path, output_folder)
@@ -65,6 +65,8 @@ module Distil
           @build_command= ""
         end
       end
+      
+      build
     end
 
     def to_s

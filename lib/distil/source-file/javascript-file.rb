@@ -5,6 +5,8 @@ module Distil
   NIB_DECLARATION_REGEX= /NIB\(\s*(["'])(\w(?:\w|-)*)\1\s*,/
   
   class JavascriptFile < SourceFile
+    include YuiMinifiableFile
+
     extension "js"
     content_type "js"
 

@@ -19,6 +19,9 @@ module Distil
 
     def notice_comment
       return @notice_comment if @notice_comment
+      notice_text= project.notice_text
+      return @notice_command= "" if !notice_text || notice_text.empty?
+      
       @notice_comment=  "/*!\n    "
       @notice_comment<< project.notice_text.split("\n").join("\n    ")
       @notice_comment<< "\n */\n"
@@ -82,25 +85,33 @@ module Distil
       gzip
     end
     
-    def minimise
+    def clean
+      FileUtils.rm output_path if File.exists?(output_path)
       return unless RELEASE_VARIANT==variant
+      FileUtils.rm minimised_filename if File.exists?(minimised_filename)
+      FileUtils.rm gzip_filename if File.exists?(gzip_filename)
+    end
+
+    def minimised_filename
+      @minimised_filename if @minimised_filename
+      
       minimised_filename= "#{project.name}"
       minimised_filename << "-#{language}" if language
       minimised_filename << ".#{content_type}"
-      minimised_filename= File.join(project.output_path, minimised_filename)
-      
+      @minimised_filename= File.join(project.output_path, minimised_filename)
+    end
+    
+    def minimise
+      return unless RELEASE_VARIANT==variant
       system("java -jar #{COMPRESSOR} --type #{content_type} -o #{minimised_filename} #{output_path}")
+    end
+    
+    def gzip_filename
+      @gzip_filename ||= "#{minimised_filename}.gz"
     end
     
     def gzip
       return unless RELEASE_VARIANT==variant
-      minimised_filename= "#{project.name}"
-      minimised_filename << "-#{language}" if language
-      minimised_filename << ".#{content_type}"
-      gzip_filename= "#{minimised_filename}.gz"
-      
-      minimised_filename= File.join(project.output_path, minimised_filename)
-      gzip_filename= File.join(project.output_path, gzip_filename)
       Zlib::GzipWriter.open(gzip_filename) do |gz|
         gz.write File.read(minimised_filename)
       end

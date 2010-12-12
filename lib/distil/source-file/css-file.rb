@@ -4,7 +4,8 @@ module Distil
   CSS_IMAGE_URL_REGEX= /url\("?(.*\.(jpg|png|gif))"?\)/
   
   class CssFile < SourceFile
-
+    include YuiMinifiableFile
+    
     extension "css"
     content_type "css"
 

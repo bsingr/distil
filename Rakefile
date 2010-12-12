@@ -16,6 +16,7 @@ begin
     gemspec.add_dependency('json', '>= 1.4.3')
     gemspec.add_dependency('rubyzip', '>=0.9.4')
     gemspec.add_dependency('treetop', '>=1.4.8')
+    gemspec.add_dependency('directory_watcher', [">= 1.1.1"])
   end
 
   Jeweler::GemcutterTasks.new

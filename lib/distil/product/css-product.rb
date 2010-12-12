@@ -11,13 +11,14 @@ module Distil
 
         files.each { |f|
           if f.is_a?(RemoteAsset)
-            path= f.file_for(content_type, variant)
+            f= project.file_from_path(f.file_for(content_type, variant))
+            path= f.relative_path
           else
             path= f.relative_path
           end
           
           next if !path
-          output.puts "@import url(#{path});"
+          output.puts "@import url(\"#{path}\");"
         }
         
       }
@@ -30,15 +31,15 @@ module Distil
         
         files.each { |f|
           if f.is_a?(RemoteAsset)
-            content= f.content_for(content_type, variant)
-            output.puts "/* #{f.name} */"
+            f= project.file_from_path(f.file_for(content_type, variant))
+            content= f.rewrite_content_relative_to_path(nil)
           else
             content= f.rewrite_content_relative_to_path(nil)
-            output.puts "/* #{f.relative_path} */"
           end
 
           next if !content || content.empty?
-            
+
+          output.puts "/* #{f.relative_path} */"
           output.puts content
           output.puts ""
         }

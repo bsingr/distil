@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Rakefile</string>
+	<string>lib/distil/server.rb</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -21,63 +21,47 @@
 	<integer>270</integer>
 	<key>metaData</key>
 	<dict>
-		<key>Rakefile</key>
+		<key>Buildfile</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>23</integer>
-			</dict>
-			<key>columnSelection</key>
-			<false/>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>22</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>23</integer>
-			</dict>
-		</dict>
-		<key>lib/distil/product/cache-manifest-product.rb</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
 				<integer>11</integer>
-				<key>line</key>
-				<integer>4</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>lib/distil/product/css-product.rb</key>
+		<key>bin/distil</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>4</integer>
 				<key>line</key>
 				<integer>44</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
+			<integer>5</integer>
+		</dict>
+		<key>lib/distil.rb</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>68</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
 			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>25</integer>
 		</dict>
 		<key>lib/distil/project.rb</key>
 		<dict>
@@ -86,35 +70,21 @@
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>82</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>60</integer>
-		</dict>
-		<key>lib/distil/remote-asset.rb</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
 				<integer>0</integer>
-				<key>line</key>
-				<integer>211</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>182</integer>
+			<integer>33</integer>
 		</dict>
-		<key>lib/distil/source-file.rb</key>
+		<key>lib/distil/server.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>15</integer>
+				<integer>6</integer>
 				<key>line</key>
-				<integer>19</integer>
+				<integer>24</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -124,12 +94,11 @@
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>lib/distil/product/css-product.rb</string>
-		<string>lib/distil/product/cache-manifest-product.rb</string>
+		<string>Buildfile</string>
+		<string>bin/distil</string>
+		<string>lib/distil.rb</string>
+		<string>lib/distil/server.rb</string>
 		<string>lib/distil/project.rb</string>
-		<string>lib/distil/source-file.rb</string>
-		<string>lib/distil/remote-asset.rb</string>
-		<string>Rakefile</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>

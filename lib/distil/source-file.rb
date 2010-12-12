@@ -4,7 +4,7 @@ module Distil
 
   class SourceFile
     attr_reader :full_path, :project
-    attr_accessor :language
+    attr_accessor :language, :is_asset
     
     class_attr :extension
     class_attr :content_type
@@ -81,17 +81,7 @@ module Distil
     end
     
     def minified_content(source=content)
-    	# Run the Y!UI Compressor
-      return source if !content_type
-    	buffer= ""
-    
-    	IO.popen("java -jar #{COMPRESSOR} --type #{content_type}", "r+") { |pipe|
-    	  pipe.puts(source)
-    	  pipe.close_write
-    	  buffer= pipe.read
-  	  }
-	  
-      buffer
+      return source
     end
   
     def path_relative_to_folder(folder)
@@ -112,6 +102,7 @@ module Distil
     end
   
     def add_asset(file)
+      file.is_asset=true
       assets << file
     end
   
@@ -128,6 +119,7 @@ module Distil
 end
 
 # load all the other file types
+require 'distil/source-file/yui-minifiable-file'
 require 'distil/source-file/css-file'
 require 'distil/source-file/html-file'
 require 'distil/source-file/javascript-file'

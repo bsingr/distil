@@ -153,7 +153,7 @@
     return {
       type: type,
       url: url,
-      callback: callback,
+      callbacks: callback ? [callback]: [],
       scope: scope,
       userData: userData,
       loadQueue: [],
@@ -209,8 +209,8 @@
       }
 
       resource.callbacksExecuted= true;
-      if (resource.callback)
-        resource.callback.call(resource.scope, resource.userData);
+      while (resource.callbacks.length)
+        (resource.callbacks.shift()).call(resource.scope, resource.userData);
         
       resource= resource.parent;
     }
@@ -324,7 +324,7 @@
     if (rootResource.callbacksExecuted)
       window.setTimeout(callback, 0);
     else
-      rootResource.callback= callback;
+      rootResource.callbacks.push(callback);
   }
 
   distil.complete= function(name)

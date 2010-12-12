@@ -92,12 +92,15 @@ module Distil
           end
           
           c.with_each :require do |asset|
-            local_asset= local_yaml["require"].find { |l|
-                l["name"]==asset["name"] && l["href"]==asset["href"]
-              }
+            if local_yaml.has_key?("require")
+              local_asset= local_yaml["require"].find { |l|
+                  l["name"]==asset["name"] && l["href"]==asset["href"]
+                }
+            else
+              local_asset= nil
+            end
             asset.deep_merge!(local_asset) if local_asset
             asset= RemoteAsset.new(asset, self)
-            asset.build
             @remote_assets << asset
             @remote_assets_by_name[asset.name]= asset
           end
@@ -132,25 +135,42 @@ module Distil
     
       include_files.each { |f| add_file.call(f) }
       ordered_files.each { |f|
+        if f.is_asset
+          puts "skipping: #{f.relative_path}"
+          next
+        end
         used= false
         products.each { |p|
           used= true if p.include_file(f)
         }
-        @source_files << f if used
-        @assets.merge(f.assets) if used && f.assets
+        if used
+          @source_files << f
+          @assets.merge(f.assets) if f.assets
+        end
+      }
+      
+      # Catch any files that were included but didn't match a product
+      ordered_files.each { |f|
+        next if @source_files.include?(f)
+        next if @assets.include?(f)
+        puts "#{f.relative_path}"
       }
     end
     
     def build
-      puts "\n#{name}:\n\n"
       compute_source_files
       validate_files
       build_assets
       products.each { |product|
         product.build
       }
-      report
-      nil
+    end
+    
+    def clean
+      compute_source_files
+      products.each { |product|
+        product.clean
+      }
     end
     
     def inspect
@@ -170,7 +190,11 @@ module Distil
     end
     
     def notice_text
-      @notice_text ||= File.read(File.join(@folder, @notice)).strip
+      begin
+        @notice_text ||= File.read(File.join(@folder, @notice)).strip
+      rescue
+        @notice_text ||= ""
+      end
     end
     
     def products
