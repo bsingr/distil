@@ -47,7 +47,9 @@ module Distil
       end
       
       @path= File.expand_path(@path)
-
+      
+      update if !up_to_date?
+      
       Dir.chdir(path) do
         case
         when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
@@ -148,7 +150,9 @@ module Distil
     def update_with_git
       require_git
       Dir.chdir path do
-        `git pull`
+        command = "git pull"
+        command << " origin #{version}" if version
+        `#{command}`
       end
     end
     
@@ -180,13 +184,12 @@ module Distil
     end
     
     def build
-      # update unless up_to_date?
+      update unless up_to_date?
 
-      command= build_command
-      return if command.empty?
-      
-      Dir.chdir(path) do
-        exit 1 if !system("#{command}")
+      unless build_command.empty?
+        Dir.chdir(path) do
+          exit 1 if !system("#{build_command}")
+        end
       end
       
       File.unlink(output_path) if File.symlink?(output_path)

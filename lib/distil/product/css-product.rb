@@ -18,8 +18,7 @@ module Distil
         output_files += files
         
         output_files.each { |f|
-          path= project.relative_output_path_for(f)
-          output.puts "@import url(\"#{path}\");"
+          output.puts "@import url(\"#{f.relative_path}\");"
         }
         
       }

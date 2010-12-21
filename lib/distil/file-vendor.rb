@@ -8,6 +8,7 @@ module Distil
     end
     
     def file_from_path(filepath)
+      return if !filepath
       @file_cache={} if @file_cache.nil?
       full_path= File.expand_path(filepath)
       file= @file_cache[full_path]

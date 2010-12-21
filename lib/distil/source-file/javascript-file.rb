@@ -65,6 +65,7 @@ module Distil
             dependency= project.find_file($1, :js, :import)
             if (dependency)
               add_dependency project.file_from_path(dependency)
+              project.add_alias_for_file($1, dependency)
             else
               error "Missing import file: #{$1}", line_num
             end

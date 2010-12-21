@@ -53,7 +53,7 @@ module Distil
           image_file= File.join(dirname, $1)
 
           if (!File.exists?(image_file))
-            warning "Resource not found: #{$1} (#{image_file})", line_num
+            warning "Resource not found: #{$1}", line_num
           else
             asset= project.file_from_path(image_file)
             add_asset(asset)

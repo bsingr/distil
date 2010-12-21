@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>lib/distil/server.rb</string>
+	<string>lib/distil/source-file.rb</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -21,84 +21,85 @@
 	<integer>270</integer>
 	<key>metaData</key>
 	<dict>
-		<key>Buildfile</key>
+		<key>lib/distil/product.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>11</integer>
+				<integer>57</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>42</integer>
 		</dict>
-		<key>bin/distil</key>
+		<key>lib/distil/product/javascript-product.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>47</integer>
 				<key>line</key>
-				<integer>44</integer>
+				<integer>40</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>5</integer>
-		</dict>
-		<key>lib/distil.rb</key>
-		<dict>
-			<key>caret</key>
+			<integer>20</integer>
+			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>34</integer>
 				<key>line</key>
-				<integer>68</integer>
+				<integer>40</integer>
 			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>25</integer>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>58</integer>
+				<key>line</key>
+				<integer>40</integer>
+			</dict>
 		</dict>
 		<key>lib/distil/project.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>32</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>220</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>33</integer>
+			<integer>195</integer>
 		</dict>
-		<key>lib/distil/server.rb</key>
+		<key>lib/distil/source-file.rb</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>6</integer>
+				<integer>13</integer>
 				<key>line</key>
-				<integer>24</integer>
+				<integer>30</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>10</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>Buildfile</string>
-		<string>bin/distil</string>
-		<string>lib/distil.rb</string>
-		<string>lib/distil/server.rb</string>
 		<string>lib/distil/project.rb</string>
+		<string>lib/distil/source-file.rb</string>
+		<string>lib/distil/product/javascript-product.rb</string>
+		<string>lib/distil/product.rb</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>

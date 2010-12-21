@@ -53,7 +53,7 @@ module Distil
       end
       
       return true if @files.include?(file)
-      
+
       if handles_file?(file)
         @files << file
         @assets.merge(file.assets) if file.assets
@@ -61,6 +61,8 @@ module Distil
     end
     
     def up_to_date?
+      count= files.length
+      return true if 0==@files.length
       return false unless File.exists?(output_path)
       product_last_modified= File.stat(output_path).mtime
       files.each { |f|
@@ -70,7 +72,7 @@ module Distil
     end
 
     def build
-      return if files.empty? || up_to_date?
+      return if up_to_date?
       
       FileUtils.mkdir_p(File.dirname(output_path))
       self.send "build_#{variant}"

@@ -19,17 +19,19 @@ module Distil
     attr_reader :source_files
     attr_reader :global_export
     attr_reader :additional_globals
-
+    attr_reader :subprojects
+    attr_reader :dependency_aliases
+    
     alias_config_key :project_type, :type
 
     def self.find(dir=nil)
       cwd= Dir.pwd
       dir ||= Dir.pwd
       while dir.length > 1
-        return new(File.join(dir, BUILD_FILE)) if File.exists?(File.join(dir, BUILD_FILE))
+        return from_file(File.join(dir, BUILD_FILE)) if File.exists?(File.join(dir, BUILD_FILE))
         
         projects= Dir.glob(File.join(dir, "*.jsproj"))
-        return new(projects.first) if 1==projects.size
+        return from_file(projects.first) if 1==projects.size
         
         unless 0==projects.size
           puts "More than one candidate for Project:"
@@ -45,29 +47,41 @@ module Distil
       nil
     end
     
-    def initialize(env)
-      @path= env
+    def self.from_file(file)
+      yaml= YAML::load_file(file)
+      if File.exists?("#{file}.local")
+        local_yaml= YAML::load_file("#{file}.local")
+        yaml.deep_merge!(local_yaml)
+      end
+      new(file, yaml)
+    end
+    
+    def initialize(path, config={}, parent=nil)
+      @path= path
       @folder= File.dirname(@path)
       @source_folder= @folder
       @output_folder= DEFAULT_OUTPUT_FOLDER
       @include_paths= [@folder]
       @include_files= []
       @asset_aliases= {}
+      @dependency_aliases= {}
       @assets= Set.new
       @source_files= Set.new
-      @libraries=[]
-      @libraries_by_name={}
+      @subprojects= []
+      @libraries= parent ? parent.libraries : []
+      @libraries_by_name= parent ? parent.libraries_by_name : {}
       @languages= []
       @additional_globals= []
       @name= File.basename(@folder, ".*")
       
       ignore_warnings= false
-      
-      yaml= YAML::load_file(@path)
-      local_yaml= File.exists?("#{@path}.local") ? YAML::load_file("#{@path}.local") : {}
 
+      child_config= config.dup
+      child_config.delete("targets")
+      child_config.delete("require")
+      
       Dir.chdir(@folder) do
-        configure_with yaml do |c|
+        configure_with config do |c|
 
           c.with :name do |name|
             @name= name
@@ -78,6 +92,10 @@ module Distil
           end
           FileUtils.mkdir_p output_folder
           
+          c.with :source_folder do |source_folder|
+            @source_folder= source_folder
+          end
+
           c.with :export do |export|
             export=@name.as_identifier if true==export
             @global_export= export
@@ -92,27 +110,24 @@ module Distil
           end
           
           c.with_each :require do |asset|
-            if local_yaml.has_key?("require")
-              local_asset= local_yaml["require"].find { |l|
-                  l["name"]==asset["name"] && l["href"]==asset["href"]
-                }
-            else
-              local_asset= nil
-            end
-            asset.deep_merge!(local_asset) if local_asset
             asset= Library.new(asset, self)
             @libraries << asset
             @libraries_by_name[asset.name]= asset
           end
-        
+
           c.with_each :source do |file|
             include_file(file)
           end
-
-        end # configure_with
         
+          c.with_each :targets do |target|
+            target_config= child_config.dup
+            target_config.deep_merge!(target)
+            @subprojects << Project.new(path, target_config, self)
+          end
+          
+        end # configure_with
       end
-      
+    
     end  
 
     def validate_files
@@ -120,6 +135,9 @@ module Distil
     end
 
     def compute_source_files
+      return if @source_files_computed
+      @source_files_computed= true
+      
       inspected= Set.new
       ordered_files= []
     
@@ -155,10 +173,24 @@ module Distil
       }
     end
     
+    def up_to_date?
+      products.each { |product|
+        return false if !product.up_to_date?
+      }
+      return true
+    end
+    
     def build
+      subprojects.each { |subproject|
+        subproject.build
+      }
+
       compute_source_files
+      return if up_to_date?
+      
       validate_files
       build_assets
+      
       products.each { |product|
         product.build
       }
@@ -184,6 +216,8 @@ module Distil
     end
     
     def relative_output_path_for(thing)
+      return nil if !thing
+      # puts "relative_output_path_for: #{thing} #{output_path}"
       Project.path_relative_to_folder(thing.is_a?(String) ? thing : thing.output_path, output_path)
     end
     
@@ -281,13 +315,15 @@ module Distil
       end
       
       matches= glob(file)
+      matches= glob(File.join(source_folder, file)) if matches.empty?
+      
       if (matches.empty?)
         error("No matching files found for: #{file}")
         return
       end
       
       matches.each { |m|
-        if (File.directory?(m))
+        if File.directory?(m)
           include_file(File.join(m, "**/*"))
         else
           f= file_from_path(m)
@@ -321,7 +357,11 @@ module Distil
       }
       return files
     end
-      
+    
+    def add_alias_for_file(alias_name, file)
+      @dependency_aliases[alias_name]= file
+    end
+        
     def find_file(path, content_type=nil, mode=nil)
       return path if File.exists?(path)
       
