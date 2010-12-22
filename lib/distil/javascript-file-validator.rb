@@ -1,8 +1,8 @@
 module Distil
 
   JSL_CONF= "#{LIB_DIR}/jsl.conf"
-  # LINT_COMMAND= "#{VENDOR_DIR}/jsl-0.3.0/bin/jsl"
-  LINT_COMMAND= "/Users/jeff/.gem/ruby/1.8/gems/distil-0.13.6/vendor/jsl-0.3.0/bin/jsl"
+  LINT_COMMAND= "#{VENDOR_DIR}/jsl-0.3.0/bin/jsl"
+  # LINT_COMMAND= "/Users/jeff/.gem/ruby/1.8/gems/distil-0.13.6/vendor/jsl-0.3.0/bin/jsl"
   JS_GLOBALS= Set.new ['Array', 'Boolean', 'Date', 'Error', 'EvalError',
                        'Function', 'Math', 'Number', 'Object', 'RangeError',
                        'ReferenceError', 'RegExp', 'String', 'SyntaxError',

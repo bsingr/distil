@@ -174,12 +174,23 @@ module Distil
     
     def up_to_date?
       return false unless File.exists?(path)
+      return @up_to_date unless @up_to_date.nil?
+      
       case protocol
       when :git
         require_git
-        revision==`git rev-parse #{version}`
+        Dir.chdir path do
+          current_sha1= `git rev-parse #{version}`
+          origin_sha1= `git ls-remote #{href} #{version}`
+          if $?.exitstatus!=0
+            project.error("Could not determine whether library is up to date: #{name}")
+            return @up_to_date=true
+          end
+          origin_sha1= origin_sha1.split(/\s/)[0]
+          return @up_to_date= (current_sha1.strip==origin_sha1.strip)
+        end
       else
-        true
+        @up_to_date= true
       end
     end
     

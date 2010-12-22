@@ -11,7 +11,7 @@ begin
     gemspec.description= gemspec.summary
     gemspec.files= Dir['assets/*', 'lib/**/*', 'bin/*', '[A-Za-z]*', 'vendor/**/*']
     gemspec.files.reject! { |f| File.directory?(f) }
-    gemspec.executables= ['distil2']
+    gemspec.executables= ['distil']
     gemspec.extensions= ['vendor/extconf.rb']
     gemspec.add_dependency('json', '>= 1.4.3')
     gemspec.add_dependency('rubyzip', '>=0.9.4')
