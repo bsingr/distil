@@ -12,7 +12,7 @@ module Distil
     include FileVendor
     include JavascriptFileValidator
     
-    attr_reader :name, :path, :folder, :source_folder, :output_folder, :include_paths
+    attr_reader :name, :path, :folder, :source_folder, :output_path, :include_paths
     attr_reader :assets, :asset_aliases
     attr_reader :libraries_by_name, :libraries
     attr_reader :languages, :project_type
@@ -58,9 +58,10 @@ module Distil
     
     def initialize(path, config={}, parent=nil)
       @path= path
+      @parent= parent
       @folder= File.dirname(@path)
       @source_folder= @folder
-      @output_folder= DEFAULT_OUTPUT_FOLDER
+      @output_path= File.join(@folder, DEFAULT_OUTPUT_FOLDER)
       @include_paths= [@folder]
       @include_files= []
       @asset_aliases= {}
@@ -88,9 +89,8 @@ module Distil
           end
           
           c.with :output_folder do |output_folder|
-            @output_folder= output_folder
+            self.output_path= File.expand_path(output_folder)
           end
-          FileUtils.mkdir_p output_folder
           
           c.with :source_folder do |source_folder|
             @source_folder= source_folder
@@ -115,8 +115,8 @@ module Distil
             @libraries_by_name[asset.name]= asset
           end
 
-          c.with_each :source do |file|
-            include_file(file)
+          c.with :source do |source_files|
+            @raw_sources= source_files
           end
         
           c.with_each :targets do |target|
@@ -137,6 +137,10 @@ module Distil
     def compute_source_files
       return if @source_files_computed
       @source_files_computed= true
+      
+      @raw_sources.each { |f|
+        include_file(f)
+      }
       
       inspected= Set.new
       ordered_files= []
@@ -181,6 +185,12 @@ module Distil
     end
     
     def build
+      libraries.each { |lib|
+        lib.build
+      }
+
+      puts "\n#{name}:\n\n" unless @parent
+      
       subprojects.each { |subproject|
         subproject.build
       }
@@ -207,8 +217,9 @@ module Distil
       "<#{self.class}:0x#{object_id.to_s(16)} name=#{name}>"
     end
     
-    def output_path
-      @output_path ||= File.join(folder, output_folder)
+    def output_path=(path)
+      @output_path= path
+      FileUtils.mkdir_p @output_path
     end
     
     def relative_path_for(thing)
@@ -258,7 +269,7 @@ module Distil
 
           parts= File.dirname(path).split(File::SEPARATOR)
           if ('.'==parts[0])
-            product_path= File.join(output_folder, path)
+            product_path= File.join(output_path, path)
             FileUtils.rm product_path if File.exists? product_path
             File.symlink path, product_path
             next
@@ -280,7 +291,7 @@ module Distil
   
     def copy_assets
       assets.each { |a|
-        a.copy_to(output_folder, source_folder)
+        a.copy_to(output_path, source_folder)
       }
     end
   
@@ -342,12 +353,12 @@ module Distil
       files= []
       
       parts= path.split(File::SEPARATOR)
-      asset_name= parts[0]
+      library_name= parts[0]
       file_path= File.join(parts.slice(1..-1))
 
-      if (@libraries_by_name.include?(asset_name))
-        asset= @libraries_by_name[asset_name]
-        return Dir.glob(File.join(asset.output_path, file_path))
+      if (@libraries_by_name.include?(library_name))
+        library= @libraries_by_name[library_name]
+        return Dir.glob(File.join(library.output_path, file_path))
       end
       
       files.concat(Dir.glob(path));

@@ -55,8 +55,7 @@ module Distil
         when File.exist?("Buildfile") || File.exists?("buildfile") || File.exist?("#{name}.jsproj")
           @build_command= APP_SCRIPT
           remote_project= Project.find(path)
-          output_folder= remote_project ? remote_project.output_folder : 'build'
-          @product_path= File.join(path, output_folder)
+          @product_path= remote_project ? remote_project.output_path : File.join(path, 'build')
         when File.exist?("Makefile") || File.exist?("makefile")
           @build_command= "make"
         when File.exists?("Rakefile") || File.exists?("rakefile")
@@ -68,7 +67,7 @@ module Distil
         end
       end
       
-      build
+      # build
     end
 
     def to_s
@@ -169,7 +168,7 @@ module Distil
     end
     
     def output_path
-      @output_path||= File.join(project.output_path, name)
+      File.join(project.output_path, name)
     end
     
     def up_to_date?
@@ -204,8 +203,6 @@ module Distil
       end
       
       File.unlink(output_path) if File.symlink?(output_path)
-      
-      # FileUtils.rm_rf(project_path) if File.directory?(project_path)
       File.symlink(project.relative_output_path_for(product_path), output_path)
     end
     

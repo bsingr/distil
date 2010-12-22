@@ -6,7 +6,7 @@ module Distil
   VENDOR_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "vendor"))
   ASSETS_DIR= File.expand_path(File.join(File.dirname(__FILE__), "..", "assets"))
   APP_NAME= File.basename($0)
-  APP_SCRIPT= $0
+  APP_SCRIPT= File.expand_path($0)
   
   $:.unshift(LIB_DIR)
 
@@ -24,23 +24,43 @@ module Distil
     opts.banner = help
 
     opts.on("--server [PORT]", "Start web server (default port 8888)") do |port|
-      options['server'] = true
-      options['server_port'] = port unless port.nil?
+      options[:server] = true
+      options[:server_port] = port unless port.nil?
     end
     
     opts.on("--base URL", "The base path for the server") do |url|
-      options['url']= url
+      options[:server_url]= url
+    end
+    
+    opts.on("--project PROJECT", "The project to build") do |project|
+      options[:project_file]= project
+    end
+    
+    opts.on("--output-folder FOLDER", "Where to put the build products") do |output_folder|
+      options[:output_path]= File.expand_path(output_folder)
     end
   end
   opts.parse!
+
+  if options[:project_file]
+    if !File.exist?(options[:project_file])
+      puts "#{APP_NAME}: No such file: #{options[:project_file]}"
+      exit 1
+    end
+    project= Project.from_file(options[:project_file])
+  else
+    project= Project.find(Dir.pwd)
+  end
   
-  project= Project.find(Dir.pwd)
   unless project
     puts "#{APP_NAME}: Could not find project to build"
     exit 1
   end
 
-  puts "\n#{project.name}:\n\n"
+  if options[:output_path]
+    project.output_path= options[:output_path]
+  end
+  
   commands= ARGV.empty? ? ['build'] : ARGV
   commands.each { |cmd|
     project.send cmd

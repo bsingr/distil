@@ -11,7 +11,7 @@ module Distil
     }
 
     server= WEBrick::HTTPServer.new(config)
-    server.mount(path || '/', WEBrick::HTTPServlet::FileHandler, project.output_folder)
+    server.mount(path || '/', WEBrick::HTTPServlet::FileHandler, project.output_path)
 
     ['INT', 'TERM'].each { |signal|
        trap(signal){ server.shutdown }
