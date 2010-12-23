@@ -36,7 +36,7 @@ module Distil
       if full_path.starts_with?(project.output_path)
         @relative_path= Project.path_relative_to_folder(full_path, project.output_path)
       else
-        @relative_path=Project.path_relative_to_folder(full_path, project.source_folder)
+        @relative_path=Project.path_relative_to_folder(full_path, project.source_path)
       end
     end
     

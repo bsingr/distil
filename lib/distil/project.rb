@@ -3,7 +3,8 @@ module Distil
   BUILD_FILE= 'Buildfile'
   DEFAULT_OUTPUT_FOLDER= 'build'
   DEFAULT_LANGUAGE= 'en'
-
+  DEFAULT_DOC_FOLDER= 'doc'
+  
   APPLICATION_TYPE= 'application'
   FRAMEWORK_TYPE= 'framework'
   
@@ -12,7 +13,7 @@ module Distil
     include FileVendor
     include JavascriptFileValidator
     
-    attr_reader :name, :path, :folder, :source_folder, :output_path, :include_paths
+    attr_reader :name, :path, :folder, :source_path, :output_path, :include_paths
     attr_reader :assets, :asset_aliases
     attr_reader :libraries_by_name, :libraries
     attr_reader :languages, :project_type
@@ -21,6 +22,8 @@ module Distil
     attr_reader :additional_globals
     attr_reader :subprojects
     attr_reader :dependency_aliases
+    attr_reader :doc_src_path
+    attr_reader :doc_output_path
     
     alias_config_key :project_type, :type
 
@@ -60,8 +63,9 @@ module Distil
       @path= path
       @parent= parent
       @folder= File.dirname(@path)
-      @source_folder= @folder
+      @source_path= File.expand_path(@folder)
       @output_path= File.join(@folder, DEFAULT_OUTPUT_FOLDER)
+      @doc_path= 
       @include_paths= [@folder]
       @include_files= []
       @asset_aliases= {}
@@ -92,8 +96,16 @@ module Distil
             self.output_path= File.expand_path(output_folder)
           end
           
+          c.with :doc_folder do |doc_folder|
+            @doc_src_path= File.expand_path(doc_folder)
+          end
+          
+          c.with :doc_output_folder do |doc_output_folder|
+            @doc_output_path= File.expand_path(doc_output_folder)
+          end
+
           c.with :source_folder do |source_folder|
-            @source_folder= source_folder
+            @source_path= File.expand_path(source_folder)
           end
 
           c.with :export do |export|
@@ -228,8 +240,15 @@ module Distil
     
     def relative_output_path_for(thing)
       return nil if !thing
-      # puts "relative_output_path_for: #{thing} #{output_path}"
-      Project.path_relative_to_folder(thing.is_a?(String) ? thing : thing.output_path, output_path)
+      thing_path= thing.is_a?(String) ? thing : thing.output_path
+      # puts "relative_output_path_for:"
+      # puts "  output_path= #{thing_path}"
+      # unless thing.is_a?(String)
+      #   puts "  full_path= #{thing.full_path}"
+      #   puts "  relative_path= #{thing.relative_path}"
+      #   puts "  source_path= #{source_path}"
+      # end
+      Project.path_relative_to_folder(thing_path, output_path)
     end
     
     def notice_text
@@ -266,12 +285,13 @@ module Distil
           next if (a.full_path).starts_with?(output_path)
 
           path= relative_output_path_for(a)
-
+          
           parts= File.dirname(path).split(File::SEPARATOR)
           if ('.'==parts[0])
+            source_path= a.path_relative_to(output_path)
             product_path= File.join(output_path, path)
             FileUtils.rm product_path if File.exists? product_path
-            File.symlink path, product_path
+            File.symlink source_path, product_path
             next
           end
 
@@ -280,7 +300,7 @@ module Distil
     
         folders.each { |f|
           target= f
-          source= relative_output_path_for(File.join(source_folder, f))
+          source= relative_output_path_for(File.join(source_path, f))
 
           FileUtils.rm target if File.symlink?(target)
           next if File.directory?(target)
@@ -291,7 +311,7 @@ module Distil
   
     def copy_assets
       assets.each { |a|
-        a.copy_to(output_path, source_folder)
+        a.copy_to(output_path, source_path)
       }
     end
   
@@ -326,7 +346,7 @@ module Distil
       end
       
       matches= glob(file)
-      matches= glob(File.join(source_folder, file)) if matches.empty?
+      matches= glob(File.join(source_path, file)) if matches.empty?
       
       if (matches.empty?)
         error("No matching files found for: #{file}")
