@@ -50,6 +50,15 @@ class String
     prefix = prefix.to_s
     self[0, prefix.length] == prefix
   end
+  def remove_indent
+    str= sub(/^\n*/, "")
+    match= str.match(/(^\s+)/)
+    return str unless match
+    str.gsub(/^#{match[1]}/, '').strip
+  end
+  def indent(str)
+    self.gsub(/^/, str)
+  end
 end
 
 require 'distil/hash-additions'

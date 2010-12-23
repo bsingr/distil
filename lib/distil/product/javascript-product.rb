@@ -75,6 +75,8 @@ module Distil
           output.puts FILE_SEPARATOR
         end
 
+        output.puts module_definition
+
         # emit remote assets first
         libraries.each { |l|
           f= project.file_from_path(l.file_for(content_type, language, variant))
@@ -86,8 +88,6 @@ module Distil
           output.puts content
           output.puts FILE_SEPARATOR
         }
-
-        output.puts module_definition
 
         if project.global_export
           exports= [project.global_export, *project.additional_globals].join(", ")

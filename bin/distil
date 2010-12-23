@@ -12,10 +12,10 @@ module Distil
 
   require 'distil'
 
-  help = <<-HELP
-  Distil is a tool for building HTML applications from its component CSS & Javascript files.
-
-  HELP
+  help = %{
+  Distil is a tool for building HTML applications from its component CSS &
+  Javascript files.
+  }.remove_indent
 
   require 'optparse'
 

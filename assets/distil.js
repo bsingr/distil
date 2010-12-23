@@ -263,6 +263,8 @@
     }
   };
   
+  distil.moduleCount= 0;
+  
   distil.module= function(name, def)
   {
     if (name in moduleIndex)
@@ -275,14 +277,16 @@
       return;
     }
 
+    distil.moduleCount++;
+    
     if (distil.sync)
     {
       var url= getRunningScriptSource();
       var lastSlash= url.lastIndexOf('/');
-      def.path= url.substring(0,lastSlash+1) + def.folder;
+      def.path= url.substring(0,lastSlash+1);
     }
     else
-      def.path= currentResource.path + def.folder;
+      def.path= currentResource.path;
       
     if ('/'!==def.path.slice(-1))
       def.path+='/';
@@ -375,7 +379,8 @@
 
   distil.moduleDidLoad= function(moduleName)
   {
-    if (rootResource===currentResource)
+    distil.moduleCount--;
+    if (!distil.moduleCount && rootResource===currentResource)
       injectionComplete(currentResource);
   }
   
